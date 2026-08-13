@@ -1145,6 +1145,11 @@ async function loadFamilyTree() {
     const errorEl = document.getElementById('error-message');
     const treeRoot = document.getElementById('tree-root');
     
+    // Always default to B"H on page/tree load
+    isCountRevealed = false;
+    const totalStatEl = document.getElementById('stat-total-number');
+    if (totalStatEl) totalStatEl.textContent = 'B"H';
+
     loading.style.display = 'flex';
     errorEl.style.display = 'none';
     treeRoot.innerHTML = '';
