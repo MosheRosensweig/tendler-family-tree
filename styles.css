@@ -196,6 +196,28 @@ h1 {
     text-align: center;
 }
 
+.stat.stat-clickable {
+    cursor: pointer;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.stat.stat-clickable:hover {
+    background: rgba(201, 165, 90, 0.12);
+    transform: translateY(-1px);
+}
+
+.stat.stat-clickable:hover .stat-number {
+    color: var(--gold-200);
+    text-shadow: 0 0 8px rgba(201, 165, 90, 0.4);
+}
+
+.stat.stat-clickable:active {
+    transform: translateY(0);
+}
+
 .stat-number {
     display: block;
     font-family: var(--font-display);

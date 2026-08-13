@@ -458,12 +458,23 @@ function getMaxDepth(node) {
     return 1 + maxChildDepth;
 }
 
+let totalMemberCount = 0;
+let isCountRevealed = false;
+
 function updateStats(root) {
     const total = countAllMembers(root);
     const generations = getMaxDepth(root);
     const branches = root.children ? root.children.length : 0;
     
-    animateNumber('stat-total-number', total);
+    totalMemberCount = total;
+    
+    if (isCountRevealed) {
+        animateNumber('stat-total-number', totalMemberCount);
+    } else {
+        const statEl = document.getElementById('stat-total-number');
+        if (statEl) statEl.textContent = 'B"H';
+    }
+    
     animateNumber('stat-gen-number', generations);
     animateNumber('stat-families-number', branches);
 }
@@ -1054,6 +1065,51 @@ function hideContactModal() {
     }
 }
 
+function setupBHPrompt() {
+    const statTotal = document.getElementById('stat-total');
+    const modal = document.getElementById('bh-modal');
+    const overlay = document.getElementById('bh-modal-overlay');
+    const closeBtn = document.getElementById('bh-modal-close');
+    const keepBlessedBtn = document.getElementById('bh-keep-blessed-btn');
+    const revealBtn = document.getElementById('bh-reveal-btn');
+    const numberEl = document.getElementById('stat-total-number');
+
+    if (!statTotal) return;
+
+    statTotal.addEventListener('click', () => {
+        if (modal) modal.style.display = 'flex';
+    });
+
+    const hideBHModal = () => {
+        if (modal) modal.style.display = 'none';
+    };
+
+    if (overlay) overlay.addEventListener('click', hideBHModal);
+    if (closeBtn) closeBtn.addEventListener('click', hideBHModal);
+
+    if (keepBlessedBtn) {
+        keepBlessedBtn.addEventListener('click', () => {
+            isCountRevealed = false;
+            if (numberEl) numberEl.textContent = 'B"H';
+            hideBHModal();
+        });
+    }
+
+    if (revealBtn) {
+        revealBtn.addEventListener('click', () => {
+            isCountRevealed = true;
+            animateNumber('stat-total-number', totalMemberCount);
+            hideBHModal();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+            hideBHModal();
+        }
+    });
+}
+
 async function loadContacts() {
     let csvText = null;
     for (const proxyFn of CORS_PROXIES) {
@@ -1543,5 +1599,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControls();
     setupSearch();
     setupContactModal();
+    setupBHPrompt();
     loadFamilyTree();
 });

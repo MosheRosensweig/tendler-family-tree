@@ -20,8 +20,8 @@
             <h1 id="main-title">Tendler Family Tree</h1>
             <p class="subtitle" id="header-subtitle">The Descendants of Moshe David Tendler <span class="amp">&amp;</span> Shifra Feinstein</p>
             <div class="header-stats" id="header-stats">
-                <div class="stat" id="stat-total">
-                    <span class="stat-number" id="stat-total-number">—</span>
+                <div class="stat stat-clickable" id="stat-total" title="Click for count options">
+                    <span class="stat-number" id="stat-total-number">B"H</span>
                     <span class="stat-label">Total Members</span>
                 </div>
                 <div class="stat-divider"></div>
@@ -144,6 +144,33 @@
             </div>
             <div class="contact-modal-footer">
                 <button class="btn btn-accent" id="contact-modal-dismiss">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blessed & Uncounted Modal -->
+    <div id="bh-modal" class="contact-modal" style="display:none;" role="dialog" aria-labelledby="bh-modal-title">
+        <div class="contact-modal-overlay" id="bh-modal-overlay"></div>
+        <div class="contact-modal-card">
+            <button class="contact-modal-close" id="bh-modal-close" title="Dismiss">✕</button>
+            <div class="contact-modal-header">
+                <div class="contact-avatar">✨</div>
+                <div>
+                    <h3 id="bh-modal-title">Blessed &amp; Uncounted (ב&quot;ה)</h3>
+                    <p class="contact-subtitle">Family Member Count</p>
+                </div>
+            </div>
+            <div class="contact-modal-body">
+                <p style="font-size: 0.95rem; color: var(--text-primary); line-height: 1.5; margin-bottom: 0.75rem;">
+                    In Jewish tradition, family members are kept <strong>blessed and uncounted</strong> (ב&quot;ה / B&quot;H).
+                </p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+                    Would you like to reveal the exact count of family members, or leave them blessed and uncounted?
+                </p>
+            </div>
+            <div class="contact-modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
+                <button class="btn" id="bh-reveal-btn">Reveal Exact Count</button>
+                <button class="btn btn-accent" id="bh-keep-blessed-btn">Leave Blessed &amp; Uncounted</button>
             </div>
         </div>
     </div>
