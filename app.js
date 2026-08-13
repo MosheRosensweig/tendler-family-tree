@@ -7,6 +7,11 @@
 const DOC_ID = '18o4faR1TntMIWkh81W4yoLGZ5n9qOId1aXjxw8AcLQY';
 const EXPORT_URL = `https://docs.google.com/document/d/${DOC_ID}/export?format=txt`;
 
+const CONTACTS_SPREADSHEET_ID = '1YnDzBpLyBD4wiSHmMxAadLVCw5bPdAwGZY7qpaz3u0U';
+const CONTACTS_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${CONTACTS_SPREADSHEET_ID}/export?format=csv`;
+
+let parsedContacts = [];
+
 // We use a CORS proxy approach. Google Docs export works directly in browsers
 // when the doc is shared publicly. If CORS blocks it, we fall back to the 
 // embedded data or a proxy.
@@ -319,8 +324,22 @@ function renderBranch(node, generation, siblingIndex) {
     const childCount = countDescendants(node);
     const countBadge = `<span class="child-count">${childCount} descendant${childCount !== 1 ? 's' : ''}</span>`;
     
-    header.innerHTML = `${expandIcon}${numberBadge}${nameHtml}${countBadge}`;
+    const contact = findContactForNode(node);
+    const contactBadgeHtml = contact ? `<button class="contact-badge" title="View contact details"><span class="contact-badge-icon">📇</span> Contact</button>` : '';
+
+    header.innerHTML = `${expandIcon}${numberBadge}${nameHtml}${countBadge}${contactBadgeHtml}`;
     
+    if (contact) {
+        header.classList.add('has-contact');
+        const badgeBtn = header.querySelector('.contact-badge');
+        if (badgeBtn) {
+            badgeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showContactModal(contact, node.name);
+            });
+        }
+    }
+
     // Branch content (children)
     const content = document.createElement('div');
     content.className = 'branch-content';
@@ -337,8 +356,12 @@ function renderBranch(node, generation, siblingIndex) {
     container.appendChild(header);
     container.appendChild(content);
     
-    // Toggle expand/collapse
-    header.addEventListener('click', () => toggleBranch(header, content));
+    // Toggle expand/collapse when clicking header (unless clicking contact badge)
+    header.addEventListener('click', (e) => {
+        if (!e.target.closest('.contact-badge')) {
+            toggleBranch(header, content);
+        }
+    });
     header.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -364,7 +387,27 @@ function renderLeafNode(node, generation) {
     }
     nameHtml += `</span>`;
     
-    el.innerHTML = `<span class="leaf-dot"></span>${nameHtml}`;
+    const contact = findContactForNode(node);
+    const contactBadgeHtml = contact ? `<button class="contact-badge" title="View contact details"><span class="contact-badge-icon">📇</span> Contact</button>` : '';
+
+    el.innerHTML = `<span class="leaf-dot"></span>${nameHtml}${contactBadgeHtml}`;
+
+    if (contact) {
+        el.classList.add('has-contact');
+        const badgeBtn = el.querySelector('.contact-badge');
+        if (badgeBtn) {
+            badgeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showContactModal(contact, node.name);
+            });
+        }
+        el.addEventListener('click', (e) => {
+            if (!e.target.closest('.contact-badge')) {
+                showContactModal(contact, node.name);
+            }
+        });
+    }
+
     return el;
 }
 
@@ -843,6 +886,194 @@ function setupControls() {
 }
 
 // ============================================
+// CONTACT INFO & MODAL LOGIC
+// ============================================
+
+function parseCSV(text) {
+    const lines = text.split('\n');
+    const result = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const row = [];
+        let inQuotes = false;
+        let currentToken = '';
+        for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                row.push(currentToken.trim());
+                currentToken = '';
+            } else {
+                currentToken += char;
+            }
+        }
+        row.push(currentToken.trim());
+        result.push(row);
+    }
+    return result;
+}
+
+function processContactsCSV(csvText) {
+    const rows = parseCSV(csvText);
+    if (rows.length < 2) return [];
+    
+    const contacts = [];
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 2) continue;
+        
+        const last = (row[0] || '').replace(/=/g, '').trim();
+        const first = (row[1] || '').trim();
+        const title = (row[2] || '').trim();
+        const street = (row[3] || '').trim();
+        const city = (row[4] || '').trim();
+        const state = (row[5] || '').trim();
+        const zip = (row[6] || '').trim();
+        const email1 = (row[7] || '').replace(/=/g, '').trim();
+        const email2 = (row[8] || '').replace(/=/g, '').trim();
+        
+        if (!first && !last) continue;
+        
+        const emails = [email1, email2].filter(e => e && e.includes('@'));
+        
+        contacts.push({
+            last,
+            first,
+            title,
+            street,
+            city,
+            state,
+            zip,
+            emails
+        });
+    }
+    return contacts;
+}
+
+function findContactForNode(node) {
+    if (!parsedContacts || parsedContacts.length === 0) return null;
+
+    const nodeFullText = (node.fullText || `${node.name} ${node.spouseName || ''}`).toLowerCase();
+
+    const tokenize = (str) => str.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 1 && !['and', 'mr', 'mrs', 'dr', 'rabbi', 'reb', 'r'].includes(w));
+
+    const nodeTokens = tokenize(nodeFullText);
+
+    let bestContact = null;
+    let bestScore = 0;
+
+    for (const c of parsedContacts) {
+        const cTokens = tokenize(`${c.first} ${c.last}`);
+        if (cTokens.length === 0) continue;
+
+        let matchCount = 0;
+        for (const ct of cTokens) {
+            if (nodeTokens.some(nt => nt.includes(ct) || ct.includes(nt))) {
+                matchCount++;
+            }
+        }
+
+        const score = matchCount / Math.max(cTokens.length, 1);
+
+        if (matchCount >= 2 && score > bestScore) {
+            bestScore = score;
+            bestContact = c;
+        } else if (matchCount >= 1 && cTokens.length === 1 && score > bestScore && bestScore < 0.8) {
+            bestScore = score;
+            bestContact = c;
+        }
+    }
+
+    return bestScore >= 0.5 ? bestContact : null;
+}
+
+function setupContactModal() {
+    const overlay = document.getElementById('contact-modal-overlay');
+    const closeBtn = document.getElementById('contact-modal-close');
+    const dismissBtn = document.getElementById('contact-modal-dismiss');
+    
+    if (overlay) overlay.addEventListener('click', hideContactModal);
+    if (closeBtn) closeBtn.addEventListener('click', hideContactModal);
+    if (dismissBtn) dismissBtn.addEventListener('click', hideContactModal);
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideContactModal();
+        }
+    });
+}
+
+function showContactModal(contact, nodeDisplayName) {
+    const modal = document.getElementById('contact-modal');
+    const titleEl = document.getElementById('contact-modal-title');
+    const subtitleEl = document.getElementById('contact-modal-subtitle');
+    const addrContainer = document.getElementById('contact-field-address');
+    const addrText = document.getElementById('contact-address-text');
+    const emailContainer = document.getElementById('contact-field-email');
+    const emailLinks = document.getElementById('contact-email-links');
+
+    if (!modal) return;
+
+    const headerTitle = contact.title && contact.title.trim() 
+        ? `${contact.title} ${contact.first} ${contact.last}` 
+        : `${contact.first} ${contact.last}`;
+        
+    titleEl.textContent = headerTitle;
+    subtitleEl.textContent = `Contact Info for ${nodeDisplayName || contact.last}`;
+
+    const addrParts = [contact.street, contact.city, contact.state, contact.zip].filter(Boolean);
+
+    if (addrParts.length > 0) {
+        addrText.textContent = addrParts.join(', ');
+        addrContainer.style.display = 'flex';
+    } else {
+        addrContainer.style.display = 'none';
+    }
+
+    if (contact.emails && contact.emails.length > 0) {
+        emailLinks.innerHTML = contact.emails
+            .map(email => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`)
+            .join('<br>');
+        emailContainer.style.display = 'flex';
+    } else {
+        emailContainer.style.display = 'none';
+    }
+
+    modal.style.display = 'flex';
+}
+
+function hideContactModal() {
+    const modal = document.getElementById('contact-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function loadContacts() {
+    let csvText = null;
+    for (const proxyFn of CORS_PROXIES) {
+        try {
+            csvText = await fetchWithProxy(CONTACTS_EXPORT_URL, proxyFn);
+            if (csvText && (csvText.includes('Email') || csvText.includes('Street') || csvText.includes('Tendler'))) {
+                break;
+            }
+            csvText = null;
+        } catch (e) {
+            csvText = null;
+        }
+    }
+    if (!csvText) {
+        csvText = FALLBACK_CONTACTS_CSV;
+    }
+    parsedContacts = processContactsCSV(csvText);
+}
+
+// ============================================
 // DATA LOADING
 // ============================================
 
@@ -861,6 +1092,9 @@ async function loadFamilyTree() {
     loading.style.display = 'flex';
     errorEl.style.display = 'none';
     treeRoot.innerHTML = '';
+    
+    // Load contacts spreadsheet
+    await loadContacts();
     
     let rawText = null;
     let lastError = null;
@@ -1258,6 +1492,49 @@ Saba (Moshe David Tendler) and Savta (Shifra/Sifra Feinstein)\r
    5. Yitzy\r
 `;
 
+const FALLBACK_CONTACTS_CSV = `Last,First,Title,Street,City,State,Zip,Email,2nd Email
+Ben-David,Chana Goldie & Tovia,Mr. &Mrs.,30/2 Rav Yisraeli ,Dolev,Israel,7193500,chanago8787@gmail.com,toviabd85@gmail.com
+Bender,Dovid & Miriam,R' & Mrs.,39 Turin,Lakewood,NJ,8701,miriten67@gmail.com,
+Bitter,Eitan and Leah,Dr. and Mrs. ,3-14 Alyson St,Fair Lawn,NJ,7410,Leahfried1@gmail.com,Eitanbitter@gmail.com
+Bohorodzaner ,Avi and Ester,Mr and Mrs ,46 Auerbach lane ,Lawrence ,Ny,11559,ebohorod@gmail.com,
+Davis,Ephraim & Rikki,Rabbi & Mrs.,6306 Pearce Ave.,Baltimore,MD,21215,rikkiho@gmail.com,
+Goldenberg,Moishe & Tamari,Mr. & Mrs.,26 Sheraton Dr.,Lakewood,NJ,8701,tamaritendler@gmail.com,
+Goldman,Yerachmiel & Naomi,Mr. & Mrs. ,6304 Lincoln Ave,Baltimore ,MD,21209,Jgoldman18@aol.com ,Naomimgoldman@gmail.com
+Groll,Avraham & Dina,Mr. & Mrs.,195 Park Avenue,Passaic,NJ,0.07055,Avraham.groll@gmail.com,Dina.groll@gmail.com
+Kaufman ,Moshe and Bella ,Rabbi and Mrs. ,6525 N Whipple St ,Chicago,IL ,60645,mandbkaufman@gmail.com ,
+Kreiger,David & Bella,Dr. & Dr.,9264 Bay Drive,Surfside,FL,33154,tendlerbella@gmail.com,
+Krumbein ,Bella Renana & Yosef,Mr & Mrs ,23/3 Beit Habchira,Efrat,Israel ,9045596,bellakrum@gmail.com,yokrum@gmail.com
+Lebowitz,Avi and Fia ,Rabbi and Mrs. ,1641 Marina way,San Jose,CA,95125,Avilebo@gmail.com,Fialebo@gmail.com
+Nusbaum,Michoel & Simi,Rabbi & Mrs. ,8036 Delmar,St. Louis,MO,63130,simitendler@gmail.com,
+Oren,Avraham & Sara,Rabbi & Mrs,15 Halamed Hey,Efrat,Israel,9043835,aoren189@gmail.com,aoren1@bezeqint.net
+Oren ,Yaakov and Leah,Mr. & Mrs.,"Hizkiyahu Hamelech 46, apartment 3 Jerusalem ",,Israel,9322406,yaakovoren@gmail.com,
+Recht,Yehoshua and Rivka ,Rabbi and Mrs. ,6622 N Mozart St.,Chicago,IL ,60645,rivkarechtlpc@gmail.com ,
+Rosensweig ,Moshe and Rachel ,Rabbi and Mrs,495 W. 187th St. APT 2D,New York,NY,10033,Rachelfried1@gmail.com,Rosensweigmoshe@gmail.com
+Rosner,Avi and Rachel,Rabbi and Mrs. ,6 Harav Moshe Ben Tov ,Jersusalem,Israel,9776511,adrrosner@gmail.com ,
+Schiller ,Meir and Ariella,Reb and Mrs.,20/47 Makhal,Jerusalem,IL ,977630,batarella@gmail.com,
+Schwartz ,Rachel and Elchanan,Mr. & Mrs ,dov hoz 8 jerusalem ,jerusalem ,Israel ,9334167,racheloren21@gmail.com,elchanan07@gmail.com
+Shlomi,Bella and Michael ,Mr. & Mrs ,POB 700,Ovnat,Israel,9065600,mikobel@gmail.com,
+Shrem,Avraham and Simma,Mr. & Mrs.,"Halochem Hayehudi 36, Lod",,Israel ,,simma.oren@gmail.com,avraham.s.shrem@gmail.com 
+Tendler,Zev & Sarah,Dr. & Mrs.,2308 Cheswolde Ave.,Baltimore,MD,21209,zevtendler@gmail.com,
+Tendler,Sholom & Rivky,Rabbi & Mrs.,3303 Pinkney Rd.,Baltimore,MD,21215,stendler1@gmail.com,rivkyt@gmail.com
+Tendler,Aron & Nami,Rabbi & Mrs.,2416 Taney Rd.,Baltimore,MD,21209,antendler@gmail.com,
+Tendler,Eli & Shulamis,Rabbi & Mrs.,6 Mevo Timnah,Jerusalem,ISRAEL,,shulamisbrickman@yahoo.com,
+Tendler,Yitzy & Nechama,Mr. & Mrs.,6603 Troy Ct.,Baltimore,MD,21209,tendleryitzy@gmail.com,
+Tendler,Shlomo & Sarala,Mr. & Mrs.,2823 Baneberry Ct.,Baltimore,MD,21209,Shlomobaruch7@gmail.com,Saralatendler@gmail.com
+Tendler,Yacov & Rivka,R' & Mrs.,514 Jarvis Rd.,Far Rockaway,NY,11691,rivkaberger98@gmail.com,
+Tendler,Hillel & Mashie,Rabbi & Mrs. ,6709 Western Run Dr.,Baltimore,MD,21215,ht@nqgrg.com,
+Tendler,Yossi and Yehudis,R and Mrs,48 arzie habira apt 28,jerusalem,Israel ,,yehudis214@gmail.com,
+Tendler,Shlomo and Sarah,Dr and Mrs,1328 Biarritz Drive,Miami Beach,FL,33141,Tendlershlomo@gmail.com,
+Tendler,Aron & Tiffany,Dr. & Dr.,255 Evernia St. Apt. 706,West Palm Beach,FL,33401,aron.tendler@gmail.com,tiffanyrothenberg@gmail.com
+Tendler,Yacov and Yael,Dr. & Mrs.,36 Rivevot Efraim St.,"Kedumim, Israel 4485600",,,ytendlermd@gmail.com,
+Tendler,Avraham Shimon,Dr. & Mrs.,10B Kol Tzofiach St.,"Kedumim, Israel 4485600",,,tendlerfamily@gmail.com,
+Tendler,Tuvia & Kelila,Mr. & Mrs ,50 Riverside Drive #10G,New York,NY,10069,tuviat2@gmail.com,
+Tendler ,Yitzchak & Elisheva ,Mr & Mrs ,402 South Pkwy,Clifton ,NJ,0.07014,isaactendler@gmail.com,eeis2004@yahoo.com
+Tendler ,Mordecai and Michelle ,Rabbi and Mrs. ,653 Union Road ,New Hempstead ,NY ,10977,rtofnh@aol.com,
+oren,Chaim and Hagit,Mr & Mrs,827 Shifon st.,"Haspin, Golan heights ",israel,1292000,chaim.oren@gmail.com,
+Geffen,Tehilla Rivka and Sagi,Mr & Mrs,Asirey Zion st. ,Beer Sheva,Israel,,lally1.oren@gmail.com,
+`;
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -1265,5 +1542,6 @@ Saba (Moshe David Tendler) and Savta (Shifra/Sifra Feinstein)\r
 document.addEventListener('DOMContentLoaded', () => {
     setupControls();
     setupSearch();
+    setupContactModal();
     loadFamilyTree();
 });

@@ -928,3 +928,207 @@ footer a:hover {
 .branch-container:nth-child(6) { animation-delay: 0.3s; }
 .branch-container:nth-child(7) { animation-delay: 0.35s; }
 .branch-container:nth-child(8) { animation-delay: 0.4s; }
+
+/* ============================================
+   CONTACT INFO BADGE & MODAL
+   ============================================ */
+
+.contact-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: var(--gold-300);
+    background: rgba(201, 165, 90, 0.12);
+    border: 1px solid rgba(201, 165, 90, 0.25);
+    border-radius: 12px;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.contact-badge:hover {
+    background: rgba(201, 165, 90, 0.25);
+    border-color: var(--gold-400);
+    color: var(--gold-100);
+    box-shadow: 0 0 8px rgba(201, 165, 90, 0.3);
+    transform: translateY(-1px);
+}
+
+.contact-badge-icon {
+    font-size: 0.8rem;
+}
+
+.leaf-node.has-contact {
+    cursor: pointer;
+}
+
+.leaf-node.has-contact:hover {
+    background: rgba(201, 165, 90, 0.08);
+}
+
+/* Modal Overlay & Card */
+.contact-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.contact-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.75);
+    backdrop-filter: blur(8px);
+    animation: fade-in-overlay 0.25s ease forwards;
+}
+
+@keyframes fade-in-overlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.contact-modal-card {
+    position: relative;
+    z-index: 2001;
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(201, 165, 90, 0.15);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: scale-up-card 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scale-up-card {
+    from { opacity: 0; transform: scale(0.94) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.contact-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.contact-modal-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+}
+
+.contact-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.contact-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(201, 165, 90, 0.15);
+    border: 1px solid var(--border-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.contact-modal-header h3 {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--gold-300);
+    line-height: 1.2;
+}
+
+.contact-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+.contact-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.contact-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 0.9rem;
+    background: rgba(15, 17, 24, 0.6);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.contact-field-icon {
+    font-size: 1.2rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.contact-field-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+}
+
+.contact-field-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.contact-field-value {
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.contact-field-value a {
+    color: var(--gold-400);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.contact-field-value a:hover {
+    color: var(--gold-200);
+    text-decoration: underline;
+}
+
+.contact-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+

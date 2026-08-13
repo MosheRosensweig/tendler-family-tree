@@ -114,8 +114,42 @@
         </div>
     </div>
 
+    <!-- Contact Info Modal -->
+    <div id="contact-modal" class="contact-modal" style="display:none;" role="dialog" aria-labelledby="contact-modal-title">
+        <div class="contact-modal-overlay" id="contact-modal-overlay"></div>
+        <div class="contact-modal-card">
+            <button class="contact-modal-close" id="contact-modal-close" title="Dismiss">✕</button>
+            <div class="contact-modal-header">
+                <div class="contact-avatar">📇</div>
+                <div>
+                    <h3 id="contact-modal-title">Contact Details</h3>
+                    <p id="contact-modal-subtitle" class="contact-subtitle"></p>
+                </div>
+            </div>
+            <div class="contact-modal-body">
+                <div class="contact-field" id="contact-field-address" style="display:none;">
+                    <div class="contact-field-icon">📍</div>
+                    <div class="contact-field-content">
+                        <div class="contact-field-label">Address</div>
+                        <div class="contact-field-value" id="contact-address-text"></div>
+                    </div>
+                </div>
+                <div class="contact-field" id="contact-field-email" style="display:none;">
+                    <div class="contact-field-icon">✉️</div>
+                    <div class="contact-field-content">
+                        <div class="contact-field-label">Email</div>
+                        <div class="contact-field-value" id="contact-email-links"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-modal-footer">
+                <button class="btn btn-accent" id="contact-modal-dismiss">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
     <footer id="main-footer">
-        <p>Data sourced live from <a href="https://docs.google.com/document/d/18o4faR1TntMIWkh81W4yoLGZ5n9qOId1aXjxw8AcLQY/edit?tab=t.0" target="_blank" rel="noopener">Google Docs</a></p>
+        <p>Sources: <a href="https://docs.google.com/document/d/18o4faR1TntMIWkh81W4yoLGZ5n9qOId1aXjxw8AcLQY/edit?tab=t.0" target="_blank" rel="noopener">Google Doc</a> &amp; <a href="https://docs.google.com/spreadsheets/d/1YnDzBpLyBD4wiSHmMxAadLVCw5bPdAwGZY7qpaz3u0U/edit?gid=0#gid=0" target="_blank" rel="noopener">Contacts Spreadsheet</a></p>
         <p class="footer-note">Last refreshed: <span id="last-refresh">—</span></p>
     </footer>
 
