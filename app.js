@@ -457,115 +457,324 @@ function escapeHtml(str) {
 // SEARCH
 // ============================================
 
+// ============================================
+// SEARCH & AUTOCOMPLETE
+// ============================================
+
+let currentMatches = [];
+let currentMatchIndex = -1;
+let autocompleteItems = [];
+let selectedAutocompleteIndex = -1;
+
 function setupSearch() {
     const input = document.getElementById('search-input');
     const clearBtn = document.getElementById('clear-search');
+    const dropdown = document.getElementById('autocomplete-dropdown');
     const resultsLabel = document.getElementById('search-results');
     let debounceTimer;
-    
+
     input.addEventListener('input', () => {
         clearTimeout(debounceTimer);
         const query = input.value.trim();
         clearBtn.classList.toggle('visible', query.length > 0);
-        
+
         debounceTimer = setTimeout(() => {
             if (query.length === 0) {
                 clearSearch();
+                hideAutocomplete();
                 resultsLabel.textContent = '';
                 return;
             }
             performSearch(query);
-        }, 200);
+        }, 150);
     });
-    
+
+    input.addEventListener('keydown', (e) => {
+        const isDropdownVisible = dropdown && dropdown.style.display !== 'none' && autocompleteItems.length > 0;
+
+        if (e.key === 'ArrowDown') {
+            if (isDropdownVisible) {
+                e.preventDefault();
+                selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, autocompleteItems.length - 1);
+                updateSelectedAutocompleteItem();
+            }
+        } else if (e.key === 'ArrowUp') {
+            if (isDropdownVisible) {
+                e.preventDefault();
+                selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+                updateSelectedAutocompleteItem();
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (isDropdownVisible && selectedAutocompleteIndex >= 0) {
+                selectAutocompleteItem(selectedAutocompleteIndex);
+            } else if (currentMatches.length > 0) {
+                hideAutocomplete();
+                if (e.shiftKey) {
+                    currentMatchIndex = (currentMatchIndex - 1 + currentMatches.length) % currentMatches.length;
+                } else {
+                    currentMatchIndex = (currentMatchIndex + 1) % currentMatches.length;
+                }
+                focusMatch(currentMatchIndex);
+            }
+        } else if (e.key === 'Escape') {
+            hideAutocomplete();
+        }
+    });
+
     clearBtn.addEventListener('click', () => {
         input.value = '';
         clearBtn.classList.remove('visible');
         clearSearch();
+        hideAutocomplete();
         resultsLabel.textContent = '';
         input.focus();
     });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-container')) {
+            hideAutocomplete();
+        }
+    });
+}
+
+function calculateMatchScore(query, text) {
+    const q = query.trim().toLowerCase();
+    const t = text.toLowerCase();
+
+    if (t === q) return 1000;
+    if (t.startsWith(q)) return 800;
+
+    const words = t.split(/[\s(),&]+/);
+    for (let i = 0; i < words.length; i++) {
+        if (words[i].startsWith(q)) {
+            return 600 - (i * 10);
+        }
+    }
+
+    const idx = t.indexOf(q);
+    if (idx !== -1) {
+        return 400 - idx;
+    }
+
+    return 0;
+}
+
+function getAncestorPath(node) {
+    const pathParts = [];
+    let current = node.parentElement;
+
+    while (current) {
+        if (current.classList.contains('branch-container')) {
+            const header = current.querySelector(':scope > .branch-header');
+            if (header && header !== node) {
+                const nameEl = header.querySelector('.person-name');
+                if (nameEl) {
+                    const cleanName = nameEl.textContent.replace(/\s+/g, ' ').trim();
+                    pathParts.unshift(cleanName);
+                }
+            }
+        }
+        current = current.parentElement;
+    }
+
+    return pathParts.join(' > ');
 }
 
 function performSearch(query) {
     const resultsLabel = document.getElementById('search-results');
     const normalizedQuery = query.toLowerCase();
-    
-    // Clear previous highlights
-    document.querySelectorAll('.search-highlight').forEach(el => {
-        const parent = el.parentNode;
-        parent.replaceChild(document.createTextNode(el.textContent), el);
-        parent.normalize();
-    });
-    document.querySelectorAll('.search-match').forEach(el => {
-        el.classList.remove('search-match');
-    });
-    
-    // Find matching nodes
+
+    clearSearch();
+
     const allNodes = document.querySelectorAll('.leaf-node, .branch-header');
-    let matchCount = 0;
-    let firstMatch = null;
-    
+    const matchesWithScores = [];
+
     allNodes.forEach(node => {
         const nameEl = node.querySelector('.person-name');
         if (!nameEl) return;
-        
-        const text = nameEl.textContent.toLowerCase();
-        if (text.includes(normalizedQuery)) {
-            matchCount++;
-            
-            // Expand all parent branches to make this visible
+
+        const text = nameEl.textContent;
+        const normalizedText = text.toLowerCase();
+
+        if (normalizedText.includes(normalizedQuery)) {
             expandParents(node);
-            
-            // Highlight the match
             highlightText(nameEl, query);
-            
+
             const container = node.closest('.branch-container') || node;
             container.classList.add('search-match');
-            
-            if (!firstMatch) {
-                firstMatch = node;
-            }
+
+            const score = calculateMatchScore(query, text);
+            const path = getAncestorPath(node);
+
+            matchesWithScores.push({
+                node: node,
+                name: text.replace(/\s+/g, ' ').trim(),
+                path: path,
+                score: score
+            });
         }
     });
-    
-    resultsLabel.textContent = matchCount > 0 
-        ? `${matchCount} match${matchCount !== 1 ? 'es' : ''} found`
-        : 'No matches found';
-    
-    // Scroll to first match
-    if (firstMatch) {
-        firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    matchesWithScores.sort((a, b) => b.score - a.score);
+
+    currentMatches = matchesWithScores.map(m => m.node);
+    autocompleteItems = matchesWithScores;
+    selectedAutocompleteIndex = -1;
+
+    if (currentMatches.length > 0) {
+        currentMatchIndex = 0;
+        focusMatch(0, false);
+        renderAutocomplete(query);
+    } else {
+        currentMatchIndex = -1;
+        hideAutocomplete();
+        resultsLabel.textContent = 'No matches found';
     }
+}
+
+function focusMatch(index, scroll = true) {
+    const resultsLabel = document.getElementById('search-results');
+
+    document.querySelectorAll('.active-search-match').forEach(el => {
+        el.classList.remove('active-search-match');
+    });
+
+    if (index < 0 || index >= currentMatches.length) return;
+
+    const activeNode = currentMatches[index];
+    const highlightTarget = activeNode.classList.contains('branch-header') 
+        ? activeNode 
+        : activeNode;
+
+    highlightTarget.classList.add('active-search-match');
+
+    resultsLabel.textContent = `Match ${index + 1} of ${currentMatches.length} (Press Enter for next)`;
+
+    if (scroll) {
+        highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function renderAutocomplete(query) {
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    if (!dropdown) return;
+
+    if (autocompleteItems.length === 0) {
+        hideAutocomplete();
+        return;
+    }
+
+    dropdown.innerHTML = '';
+
+    autocompleteItems.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        if (index === selectedAutocompleteIndex) {
+            div.classList.add('selected');
+        }
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'autocomplete-item-name';
+        nameDiv.innerHTML = highlightMatchHTML(item.name, query);
+
+        div.appendChild(nameDiv);
+
+        if (item.path) {
+            const pathDiv = document.createElement('div');
+            pathDiv.className = 'autocomplete-item-path';
+            pathDiv.textContent = item.path;
+            div.appendChild(pathDiv);
+        }
+
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectAutocompleteItem(index);
+        });
+
+        dropdown.appendChild(div);
+    });
+
+    dropdown.style.display = 'block';
+}
+
+function highlightMatchHTML(text, query) {
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const idx = lowerText.indexOf(lowerQuery);
+
+    if (idx === -1) return escapeHtml(text);
+
+    const before = text.substring(0, idx);
+    const match = text.substring(idx, idx + query.length);
+    const after = text.substring(idx + query.length);
+
+    return `${escapeHtml(before)}<span class="search-highlight">${escapeHtml(match)}</span>${escapeHtml(after)}`;
+}
+
+function updateSelectedAutocompleteItem() {
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    if (!dropdown) return;
+
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    items.forEach((item, idx) => {
+        if (idx === selectedAutocompleteIndex) {
+            item.classList.add('selected');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+}
+
+function selectAutocompleteItem(index) {
+    if (index < 0 || index >= autocompleteItems.length) return;
+
+    const item = autocompleteItems[index];
+    const input = document.getElementById('search-input');
+
+    input.value = item.name;
+    hideAutocomplete();
+
+    currentMatchIndex = index;
+    focusMatch(index, true);
+}
+
+function hideAutocomplete() {
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+    selectedAutocompleteIndex = -1;
 }
 
 function highlightText(element, query) {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
-    
+
     textNodes.forEach(textNode => {
         const text = textNode.textContent;
         const lowerText = text.toLowerCase();
         const lowerQuery = query.toLowerCase();
         const index = lowerText.indexOf(lowerQuery);
-        
+
         if (index === -1) return;
-        
+
         const before = text.substring(0, index);
         const match = text.substring(index, index + query.length);
         const after = text.substring(index + query.length);
-        
+
         const span = document.createElement('span');
         span.className = 'search-highlight';
         span.textContent = match;
-        
+
         const parent = textNode.parentNode;
         const frag = document.createDocumentFragment();
         if (before) frag.appendChild(document.createTextNode(before));
         frag.appendChild(span);
         if (after) frag.appendChild(document.createTextNode(after));
-        
+
         parent.replaceChild(frag, textNode);
     });
 }
@@ -594,6 +803,13 @@ function clearSearch() {
     document.querySelectorAll('.search-match').forEach(el => {
         el.classList.remove('search-match');
     });
+    document.querySelectorAll('.active-search-match').forEach(el => {
+        el.classList.remove('active-search-match');
+    });
+    currentMatches = [];
+    currentMatchIndex = -1;
+    autocompleteItems = [];
+    selectedAutocompleteIndex = -1;
 }
 
 // ============================================

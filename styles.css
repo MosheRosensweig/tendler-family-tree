@@ -318,6 +318,54 @@ h1 {
     letter-spacing: 0.03em;
 }
 
+/* Autocomplete Dropdown */
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    backdrop-filter: blur(16px);
+}
+
+.autocomplete-item {
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background var(--transition-fast);
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+    background: var(--bg-card-hover);
+}
+
+.autocomplete-item-name {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.autocomplete-item-path {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+
 .button-group {
     display: flex;
     gap: 0.5rem;
@@ -666,6 +714,13 @@ main {
 
 .search-match {
     animation: match-glow 1.5s ease-in-out;
+}
+
+.active-search-match {
+    outline: 2px solid var(--gold-400) !important;
+    box-shadow: 0 0 16px rgba(201, 165, 90, 0.5) !important;
+    background: rgba(201, 165, 90, 0.18) !important;
+    border-radius: var(--radius-sm);
 }
 
 @keyframes match-glow {
