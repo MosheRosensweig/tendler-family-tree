@@ -328,13 +328,25 @@ function renderBranch(node, generation, siblingIndex) {
     nameHtml += `</span>`;
     
     const childCount = countDescendants(node);
-    const countBadge = `<span class="child-count">${childCount} descendant${childCount !== 1 ? 's' : ''}</span>`;
+    const plural = childCount !== 1 ? 's' : '';
+    const countText = isCountRevealed ? `${childCount} descendant${plural}` : `B"H descendant${plural}`;
+    const revealedClass = isCountRevealed ? ' revealed' : '';
+    const countBadge = `<button class="child-count${revealedClass}" data-count="${childCount}" title="Click for count options">${countText}</button>`;
     
     const contact = findContactForNode(node);
     const contactBadgeHtml = contact ? `<button class="contact-badge" title="View contact details"><span class="contact-badge-icon">📇</span> Contact</button>` : '';
 
     header.innerHTML = `${expandIcon}${numberBadge}${nameHtml}${countBadge}${contactBadgeHtml}`;
     
+    // Attach listener to child-count B"H button
+    const countBtn = header.querySelector('.child-count');
+    if (countBtn) {
+        countBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showBHModal();
+        });
+    }
+
     if (contact) {
         header.classList.add('has-contact');
         const badgeBtn = header.querySelector('.contact-badge');
@@ -362,9 +374,9 @@ function renderBranch(node, generation, siblingIndex) {
     container.appendChild(header);
     container.appendChild(content);
     
-    // Toggle expand/collapse when clicking header (unless clicking contact badge)
+    // Toggle expand/collapse when clicking header (unless clicking contact badge or count badge)
     header.addEventListener('click', (e) => {
-        if (!e.target.closest('.contact-badge')) {
+        if (!e.target.closest('.contact-badge') && !e.target.closest('.child-count')) {
             toggleBranch(header, content);
         }
     });
@@ -473,13 +485,7 @@ function updateStats(root) {
     const branches = root.children ? root.children.length : 0;
     
     totalMemberCount = total;
-    
-    if (isCountRevealed) {
-        animateNumber('stat-total-number', totalMemberCount);
-    } else {
-        const statEl = document.getElementById('stat-total-number');
-        if (statEl) statEl.textContent = 'B"H';
-    }
+    updateAllCounts();
     
     animateNumber('stat-gen-number', generations);
     animateNumber('stat-families-number', branches);
@@ -1071,6 +1077,39 @@ function hideContactModal() {
     }
 }
 
+function showBHModal() {
+    const modal = document.getElementById('bh-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function updateAllCounts() {
+    // 1. Top header total stat
+    const totalStatEl = document.getElementById('stat-total-number');
+    if (totalStatEl) {
+        if (isCountRevealed) {
+            animateNumber('stat-total-number', totalMemberCount);
+        } else {
+            totalStatEl.textContent = 'B"H';
+        }
+    }
+    
+    // 2. All descendant count buttons across all levels
+    document.querySelectorAll('.child-count').forEach(btn => {
+        const count = btn.dataset.count;
+        if (!count) return;
+        const plural = count !== '1' ? 's' : '';
+        if (isCountRevealed) {
+            btn.textContent = `${count} descendant${plural}`;
+            btn.classList.add('revealed');
+        } else {
+            btn.textContent = `B"H descendant${plural}`;
+            btn.classList.remove('revealed');
+        }
+    });
+}
+
 function setupBHPrompt() {
     const statTotal = document.getElementById('stat-total');
     const modal = document.getElementById('bh-modal');
@@ -1078,13 +1117,10 @@ function setupBHPrompt() {
     const closeBtn = document.getElementById('bh-modal-close');
     const keepBlessedBtn = document.getElementById('bh-keep-blessed-btn');
     const revealBtn = document.getElementById('bh-reveal-btn');
-    const numberEl = document.getElementById('stat-total-number');
 
-    if (!statTotal) return;
-
-    statTotal.addEventListener('click', () => {
-        if (modal) modal.style.display = 'flex';
-    });
+    if (statTotal) {
+        statTotal.addEventListener('click', showBHModal);
+    }
 
     const hideBHModal = () => {
         if (modal) modal.style.display = 'none';
@@ -1096,7 +1132,7 @@ function setupBHPrompt() {
     if (keepBlessedBtn) {
         keepBlessedBtn.addEventListener('click', () => {
             isCountRevealed = false;
-            if (numberEl) numberEl.textContent = 'B"H';
+            updateAllCounts();
             hideBHModal();
         });
     }
@@ -1104,7 +1140,7 @@ function setupBHPrompt() {
     if (revealBtn) {
         revealBtn.addEventListener('click', () => {
             isCountRevealed = true;
-            animateNumber('stat-total-number', totalMemberCount);
+            updateAllCounts();
             hideBHModal();
         });
     }

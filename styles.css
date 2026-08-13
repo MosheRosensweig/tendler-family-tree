@@ -640,11 +640,32 @@ main {
 
 .branch-header .child-count {
     font-size: 0.72rem;
-    color: var(--text-muted);
-    background: rgba(255,255,255,0.05);
+    font-family: var(--font-body);
+    color: var(--gold-400);
+    background: rgba(201, 165, 90, 0.12);
+    border: 1px solid rgba(201, 165, 90, 0.25);
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-sm);
     white-space: nowrap;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-weight: 600;
+    user-select: none;
+}
+
+.branch-header .child-count:hover {
+    background: rgba(201, 165, 90, 0.25);
+    color: var(--gold-200);
+    border-color: var(--gold-400);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.branch-header .child-count.revealed {
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: transparent;
+    font-weight: 500;
 }
 
 /* Branch content (expandable children area) */
