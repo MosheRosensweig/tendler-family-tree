@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tendler Family Tree</title>
+    <meta name="description" content="Interactive family tree of the Tendler family - descendants of Moshe David Tendler and Shifra/Sifra Feinstein">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <header id="main-header">
+        <div class="header-ornament top"></div>
+        <div class="header-content">
+            <div class="header-icon">🌳</div>
+            <h1 id="main-title">Tendler Family Tree</h1>
+            <p class="subtitle" id="header-subtitle">The Descendants of Moshe David Tendler <span class="amp">&amp;</span> Shifra Feinstein</p>
+            <div class="header-stats" id="header-stats">
+                <div class="stat" id="stat-total">
+                    <span class="stat-number" id="stat-total-number">—</span>
+                    <span class="stat-label">Total Members</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat" id="stat-generations">
+                    <span class="stat-number" id="stat-gen-number">—</span>
+                    <span class="stat-label">Generations</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat" id="stat-families">
+                    <span class="stat-number" id="stat-families-number">—</span>
+                    <span class="stat-label">Family Branches</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-ornament bottom"></div>
+    </header>
+
+    <div class="controls" id="controls">
+        <div class="search-container">
+            <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search for a family member..." autocomplete="off">
+                <button class="clear-search" id="clear-search" title="Clear search">✕</button>
+            </div>
+            <span class="search-results" id="search-results"></span>
+        </div>
+        <div class="button-group">
+            <button class="btn" id="expand-all" title="Expand All">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+                Expand All
+            </button>
+            <button class="btn" id="collapse-all" title="Collapse All">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M18 15l-6-6-6 6"/>
+                </svg>
+                Collapse All
+            </button>
+            <button class="btn btn-accent" id="refresh-btn" title="Refresh from Google Doc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <main id="tree-container">
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading family tree from Google Docs...</p>
+        </div>
+        <div class="error-message" id="error-message" style="display:none;">
+            <div class="error-icon">⚠️</div>
+            <h3>Could not load family tree</h3>
+            <p id="error-text"></p>
+            <button class="btn btn-accent" onclick="loadFamilyTree()">Try Again</button>
+        </div>
+        <div id="tree-root"></div>
+    </main>
+
+    <div class="legend" id="legend">
+        <h3>Legend</h3>
+        <div class="legend-items">
+            <div class="legend-item">
+                <span class="legend-dot generation-root"></span>
+                <span>Patriarchs/Matriarchs</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot generation-1"></span>
+                <span>Children</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot generation-2"></span>
+                <span>Grandchildren</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot generation-3"></span>
+                <span>Great-Grandchildren</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot generation-4"></span>
+                <span>Great-Great-Grandchildren</span>
+            </div>
+        </div>
+    </div>
+
+    <footer id="main-footer">
+        <p>Data sourced live from <a href="https://docs.google.com/document/d/18o4faR1TntMIWkh81W4yoLGZ5n9qOId1aXjxw8AcLQY/edit?tab=t.0" target="_blank" rel="noopener">Google Docs</a></p>
+        <p class="footer-note">Last refreshed: <span id="last-refresh">—</span></p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
