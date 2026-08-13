@@ -532,11 +532,23 @@ main {
     position: relative;
 }
 
+.tree-root-node .person-name .spouse-name {
+    color: var(--gold-300);
+    font-weight: 700;
+}
+
+.tree-root-node .person-name .amp {
+    color: var(--gold-500);
+    font-weight: 400;
+}
+
 .tree-root-node .person-detail {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-top: 0.25rem;
+    margin-top: 0.35rem;
     position: relative;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 /* Branch containers */

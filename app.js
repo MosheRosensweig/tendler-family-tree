@@ -275,9 +275,15 @@ function renderTree(root) {
 function renderRootNode(node) {
     const el = document.createElement('div');
     el.className = 'tree-root-node';
+    
+    let nameHtml = `<span class="primary-name">${escapeHtml(node.name)}</span>`;
+    if (node.spouseName) {
+        nameHtml += ` <span class="amp">&amp;</span> <span class="spouse-name">${escapeHtml(node.spouseName)}</span>`;
+    }
+    
     el.innerHTML = `
-        <div class="person-name">${escapeHtml(node.name)}</div>
-        <div class="person-detail">${node.title || ''} — married to ${escapeHtml(node.spouseName || '')}</div>
+        <div class="person-name">${nameHtml}</div>
+        <div class="person-detail">${escapeHtml(node.title || 'Saba & Savta')}</div>
     `;
     return el;
 }
