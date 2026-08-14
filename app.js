@@ -313,9 +313,9 @@ function renderBranch(node, generation, siblingIndex) {
     
     const expandIcon = `<div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>`;
     
-    const numberBadge = node.number != null 
-        ? `<span class="branch-number">${node.number}</span>` 
-        : '';
+    const numValue = node.number != null ? node.number : '';
+    const displayNum = isCountRevealed ? (numValue || '•') : '•';
+    const numberBadge = `<span class="branch-number" data-number="${numValue}">${displayNum}</span>`;
     
     let nameHtml = `<span class="person-name">${escapeHtml(node.name)}`;
     if (node.spouseName) {
@@ -1106,6 +1106,16 @@ function updateAllCounts() {
         } else {
             btn.textContent = `B"H descendant${plural}`;
             btn.classList.remove('revealed');
+        }
+    });
+
+    // 3. All branch sibling order badges across all levels
+    document.querySelectorAll('.branch-number').forEach(el => {
+        const rawNum = el.dataset.number;
+        if (isCountRevealed) {
+            el.textContent = rawNum || '•';
+        } else {
+            el.textContent = '•';
         }
     });
 }
