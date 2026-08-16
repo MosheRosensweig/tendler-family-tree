@@ -1988,8 +1988,53 @@ function setupAddMemberModal() {
         let bdaySnippet = '';
         let contactSnippet = '';
 
-        // Determine parent's last name from tree context
-        const parentLastName = targetNode.name.split(' ').slice(-1)[0] || 'Tendler';
+        // Determine parent's last name from tree context.
+        // The node.name is often just a first name (e.g. "Rachel Fraidel")
+        // so we also check spouseName, fullText, and contacts/birthday data
+        // to find the actual family surname.
+        const knownSurnames = ['Tendler', 'Fried', 'Oren', 'Rappaport', 'Leibowitz', 'Kreiger',
+            'Bohorodzaner', 'Charner', 'Rosner', 'Kaufman', 'Recht', 'Shoff', 'Shub',
+            'Schiller', 'Goldman', 'Groll', 'Warn', 'Donaty', 'Bitter', 'Rosensweig',
+            'Krumbein', 'Ben-Dovid', 'Ben-David', 'Shrem', 'Paley', 'Gefen', 'Geffen',
+            'Ishon', 'Kazarnovsky', 'Jacobowitz', 'Nussbaum', 'Goldenberg', 'Davis',
+            'Slasky', 'Fox', 'Schwartz', 'Feinstein', 'Hainovitz', 'Gnatek',
+            'Reinstein', 'Katan', 'Goldberg', 'Perlow', 'Meirson', 'Shlomi', 'Kunin',
+            'Tanenbaum', 'Roth', 'Dvir', 'Rothenberg', 'Bersin', 'Greenberg', 'Weiss',
+            'Valt', 'Ovitz', 'Sebbag', 'Kahane', 'Jofen', 'Bender', 'Brickman',
+            'Spetner', 'Gold', 'Berger', 'Lerner', 'Shapiro', 'Cohen', 'Eis',
+            'Kreitenberg', 'Hechtman', 'Frenkel', 'Gruman', 'Hoffman', 'Pollak',
+            'Schonkopf', 'Feldstein', 'Lieder', 'Donaty'];
+        function extractFamilySurname(node) {
+            // Check all text sources for a known surname
+            const textSources = [
+                node.spouseName || '',     // "Moshe Rosensweig"
+                node.fullText || '',       // "Rachel Fraidel and Moshe Rosensweig"
+                node.name || ''            // "Rachel Fraidel" (fallback)
+            ];
+            for (const text of textSources) {
+                const words = text.trim().split(/\s+/);
+                // Check from the end since surnames are typically last
+                for (let i = words.length - 1; i >= 0; i--) {
+                    const word = words[i].replace(/[()]/g, '');
+                    if (knownSurnames.some(s => s.toLowerCase() === word.toLowerCase())) {
+                        return word;
+                    }
+                }
+            }
+            // Also check contacts data for a matching contact
+            const contact = findContactForNode(node);
+            if (contact && contact.last) return contact.last;
+            // Also check birthdays data
+            for (const b of parsedBirthdays) {
+                const nameToCheck = (node.name || '').split(' ')[0].toLowerCase();
+                if (b.first && b.first.toLowerCase().includes(nameToCheck) && b.last) {
+                    return b.last;
+                }
+            }
+            // Last resort: last word of name
+            return node.name.split(' ').slice(-1)[0] || 'Tendler';
+        }
+        const parentLastName = extractFamilySurname(targetNode);
         const finalLastName = lastName || parentLastName;
 
         if (addType === 'spouse') {
@@ -2067,6 +2112,7 @@ function setupAddMemberModal() {
                     parentSpouse: targetNode.spouseName || '',
                     firstName: firstName,
                     lastName: lastName,
+                    familyName: finalLastName,
                     birthday: birthday,
                     hebrewBirthday: hebrewBirthday,
                     email: email,
