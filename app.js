@@ -9,8 +9,14 @@ const EXPORT_URL = `https://docs.google.com/document/d/${DOC_ID}/export?format=t
 
 const CONTACTS_SPREADSHEET_ID = '1YnDzBpLyBD4wiSHmMxAadLVCw5bPdAwGZY7qpaz3u0U';
 const CONTACTS_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${CONTACTS_SPREADSHEET_ID}/export?format=csv`;
+const BIRTHDAYS_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${CONTACTS_SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=275461243`;
+
+// Google Apps Script Web App URL — set this after deploying the script
+// See google_apps_script.js for setup instructions
+const APPS_SCRIPT_URL = '';
 
 let parsedContacts = [];
+let parsedBirthdays = [];
 
 // We use a CORS proxy approach. Google Docs export works directly in browsers
 // when the doc is shared publicly. If CORS blocks it, we fall back to the 
@@ -250,6 +256,7 @@ function parsePersonLine(text) {
 // ============================================
 
 function renderTree(root) {
+    currentTreeData = root;
     const container = document.getElementById('tree-root');
     container.innerHTML = '';
     
@@ -334,9 +341,11 @@ function renderBranch(node, generation, siblingIndex) {
     const countBadge = `<button class="child-count${revealedClass}" data-count="${childCount}" title="Click for count options">${countText}</button>`;
     
     const contact = findContactForNode(node);
+    const nodeBirthdays = getBirthdaysForNode(node);
+    const birthdayBadgeHtml = nodeBirthdays.length > 0 ? `<button class="node-birthday-badge" title="View birthday information">🎂</button>` : '';
     const contactBadgeHtml = contact ? `<button class="contact-badge" title="View contact details"><span class="contact-badge-icon">📇</span> Contact</button>` : '';
 
-    header.innerHTML = `${expandIcon}${numberBadge}${nameHtml}${countBadge}${contactBadgeHtml}`;
+    header.innerHTML = `${expandIcon}${numberBadge}${nameHtml}${countBadge}${birthdayBadgeHtml}${contactBadgeHtml}`;
     
     // Attach listener to child-count B"H button
     const countBtn = header.querySelector('.child-count');
@@ -344,6 +353,14 @@ function renderBranch(node, generation, siblingIndex) {
         countBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             showBHModal();
+        });
+    }
+
+    const bdayBtn = header.querySelector('.node-birthday-badge');
+    if (bdayBtn) {
+        bdayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showPersonBirthdayModal(node);
         });
     }
 
@@ -374,9 +391,9 @@ function renderBranch(node, generation, siblingIndex) {
     container.appendChild(header);
     container.appendChild(content);
     
-    // Toggle expand/collapse when clicking header (unless clicking contact badge or count badge)
+    // Toggle expand/collapse when clicking header (unless clicking contact badge, birthday badge, or count badge)
     header.addEventListener('click', (e) => {
-        if (!e.target.closest('.contact-badge') && !e.target.closest('.child-count')) {
+        if (!e.target.closest('.contact-badge') && !e.target.closest('.node-birthday-badge') && !e.target.closest('.child-count')) {
             toggleBranch(header, content);
         }
     });
@@ -406,9 +423,19 @@ function renderLeafNode(node, generation) {
     nameHtml += `</span>`;
     
     const contact = findContactForNode(node);
+    const nodeBirthdays = getBirthdaysForNode(node);
+    const birthdayBadgeHtml = nodeBirthdays.length > 0 ? `<button class="node-birthday-badge" title="View birthday information">🎂</button>` : '';
     const contactBadgeHtml = contact ? `<button class="contact-badge" title="View contact details"><span class="contact-badge-icon">📇</span> Contact</button>` : '';
 
-    el.innerHTML = `<span class="leaf-dot"></span>${nameHtml}${contactBadgeHtml}`;
+    el.innerHTML = `<span class="leaf-dot"></span>${nameHtml}${birthdayBadgeHtml}${contactBadgeHtml}`;
+
+    const bdayBtn = el.querySelector('.node-birthday-badge');
+    if (bdayBtn) {
+        bdayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showPersonBirthdayModal(node);
+        });
+    }
 
     if (contact) {
         el.classList.add('has-contact');
@@ -420,7 +447,7 @@ function renderLeafNode(node, generation) {
             });
         }
         el.addEventListener('click', (e) => {
-            if (!e.target.closest('.contact-badge')) {
+            if (!e.target.closest('.contact-badge') && !e.target.closest('.node-birthday-badge')) {
                 showContactModal(contact, node.name);
             }
         });
@@ -537,25 +564,60 @@ function setupSearch() {
     const clearBtn = document.getElementById('clear-search');
     const dropdown = document.getElementById('autocomplete-dropdown');
     const resultsLabel = document.getElementById('search-results');
+    const addMemberBtn = document.getElementById('add-member-btn');
     let debounceTimer;
+
+    function checkUnlock(val) {
+        const cleaned = (val || '').toLowerCase().replace(/['"“”]/g, '').trim();
+        if (cleaned === 'add member' || cleaned === 'addmember') {
+            if (addMemberBtn) {
+                addMemberBtn.style.setProperty('display', 'inline-flex', 'important');
+            }
+            input.value = '';
+            if (clearBtn) clearBtn.classList.remove('visible');
+            clearSearch();
+            hideAutocomplete();
+            if (resultsLabel) {
+                resultsLabel.textContent = '✨ Add Member unlocked';
+                setTimeout(() => {
+                    if (resultsLabel.textContent === '✨ Add Member unlocked') {
+                        resultsLabel.textContent = '';
+                    }
+                }, 4000);
+            }
+            return true;
+        }
+        return false;
+    }
 
     input.addEventListener('input', () => {
         clearTimeout(debounceTimer);
-        const query = input.value.trim();
-        clearBtn.classList.toggle('visible', query.length > 0);
+        const query = input.value;
+
+        if (checkUnlock(query)) {
+            return;
+        }
+
+        clearBtn.classList.toggle('visible', query.trim().length > 0);
 
         debounceTimer = setTimeout(() => {
-            if (query.length === 0) {
+            const qTrim = input.value.trim();
+            if (qTrim.length === 0) {
                 clearSearch();
                 hideAutocomplete();
                 resultsLabel.textContent = '';
                 return;
             }
-            performSearch(query);
+            performSearch(qTrim);
         }, 150);
     });
 
     input.addEventListener('keydown', (e) => {
+        if (checkUnlock(input.value)) {
+            e.preventDefault();
+            return;
+        }
+
         const isDropdownVisible = dropdown && dropdown.style.display !== 'none' && autocompleteItems.length > 0;
 
         if (e.key === 'ArrowDown') {
@@ -1015,6 +1077,517 @@ function findContactForNode(node) {
     return bestScore >= 0.5 ? bestContact : null;
 }
 
+// ============================================
+// HEBREW CALENDAR & BIRTHDAYS MODULE
+// ============================================
+
+const HEBREW_MONTH_MAP = {
+    'תשרי': 'Tishrei', 'חשון': 'Cheshvan', 'מרחשון': 'Cheshvan', 'כסלו': 'Kislev', 'כסליו': 'Kislev',
+    'טבת': 'Tevet', 'שבט': 'Shevat', 'אדר': 'Adar', 'אדר א': 'Adar I', 'אדר ב': 'Adar II',
+    'ניסן': 'Nisan', 'אייר': 'Iyyar', 'סיון': 'Sivan', 'סיוון': 'Sivan', 'תמוז': 'Tamuz',
+    'אב': 'Av', 'מנחם אב': 'Av', 'אלול': 'Elul'
+};
+
+const HEBREW_DAY_LETTERS = [
+    '', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י',
+    'יא', 'יב', 'יג', 'יד', 'טו', 'טז', 'יז', 'יח', 'יט', 'כ',
+    'כא', 'כב', 'כג', 'כד', 'כה', 'כו', 'כז', 'כח', 'כט', 'ל'
+];
+
+function formatHebrewDayName(dayNum) {
+    if (!dayNum || dayNum < 1 || dayNum > 30) return '';
+    const name = HEBREW_DAY_LETTERS[dayNum];
+    if (name.length === 1) return `${name}׳`;
+    return `${name.slice(0, 1)}״${name.slice(1)}`;
+}
+
+function parseHebrewBirthdayString(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    let clean = raw.replace(/\(.*?\)/g, '').replace(/['\"״׳״׳]/g, '').trim();
+    clean = clean.replace(/\s+/g, ' ');
+    if (!clean) return null;
+
+    let foundMonth = null;
+    let foundKey = '';
+    const monthKeys = Object.keys(HEBREW_MONTH_MAP).sort((a, b) => b.length - a.length);
+    for (const k of monthKeys) {
+        if (clean.includes(k)) {
+            foundMonth = HEBREW_MONTH_MAP[k];
+            foundKey = k;
+            break;
+        }
+    }
+    if (!foundMonth) return null;
+
+    let dayStr = clean.replace(foundKey, '').trim();
+    if (dayStr.startsWith('ב ')) dayStr = dayStr.substring(2).trim();
+
+    const valMap = {'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,'כ':20,'ל':30};
+    let dayNum = 0;
+    if (/^\d+$/.test(dayStr)) {
+        dayNum = parseInt(dayStr, 10);
+    } else {
+        for (const char of dayStr) {
+            if (valMap[char]) dayNum += valMap[char];
+        }
+    }
+
+    return {
+        raw: raw.trim(),
+        month: foundMonth,
+        day: dayNum,
+        monthHe: foundKey
+    };
+}
+
+function parseEnglishBirthdayString(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    const clean = raw.trim();
+    if (!clean) return null;
+
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    let foundMonthIdx = -1;
+    let foundMonthName = '';
+
+    for (let i = 0; i < months.length; i++) {
+        const m = months[i];
+        if (clean.toLowerCase().includes(m.toLowerCase()) || clean.toLowerCase().includes(m.substring(0, 3).toLowerCase())) {
+            foundMonthIdx = i; // 0-indexed (0=Jan)
+            foundMonthName = m;
+            break;
+        }
+    }
+    if (foundMonthIdx === -1) return null;
+
+    const dayMatch = clean.match(/(\d{1,2})/);
+    const day = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+
+    return {
+        raw: clean,
+        monthIdx: foundMonthIdx,
+        monthName: foundMonthName,
+        day: day
+    };
+}
+
+function getHebrewDateInfo(date) {
+    const parts = new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(date);
+    const partsHe = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(date);
+
+    const monthPart = parts.find(p => p.type === 'month');
+    const dayPart = parts.find(p => p.type === 'day');
+    const yearPart = parts.find(p => p.type === 'year');
+    const monthHePart = partsHe.find(p => p.type === 'month');
+
+    return {
+        month: monthPart ? monthPart.value : '',
+        day: dayPart ? parseInt(dayPart.value, 10) : 1,
+        year: yearPart ? yearPart.value : '',
+        monthHe: monthHePart ? monthHePart.value : ''
+    };
+}
+
+function matchesHebrewDate(personHDate, targetHDate) {
+    if (!personHDate || !personHDate.month || !personHDate.day) return false;
+    if (personHDate.day !== targetHDate.day) return false;
+
+    let pMonth = personHDate.month;
+    let tMonth = targetHDate.month;
+
+    // Treat Adar I as Adar during regular (non-leap) years
+    if (tMonth === 'Adar') {
+        if (pMonth === 'Adar I' || pMonth === 'Adar II') {
+            pMonth = 'Adar';
+        }
+    }
+
+    return pMonth === tMonth;
+}
+
+function matchesEnglishDate(personEDate, targetDate) {
+    if (!personEDate || personEDate.monthIdx < 0 || !personEDate.day) return false;
+    return personEDate.monthIdx === targetDate.getMonth() && personEDate.day === targetDate.getDate();
+}
+
+function findBirthdayForPerson(personFullName, possibleLastNames = []) {
+    if (!personFullName) return null;
+    const cleanPerson = personFullName.toLowerCase().replace(/['"&,()]/g, ' ').trim();
+    const tokens = cleanPerson.split(/\s+/).filter(t => t.length > 1 && !['and', 'mr', 'mrs', 'dr', 'rabbi', 'spouse'].includes(t));
+    if (tokens.length === 0) return null;
+
+    const lastNameCandidates = (possibleLastNames || []).map(l => (l || '').toLowerCase().trim()).filter(Boolean);
+
+    // 1. Exact match on fullName
+    for (const b of parsedBirthdays) {
+        const bFull = (b.fullName || '').toLowerCase().trim();
+        if (bFull && (cleanPerson === bFull || cleanPerson.includes(bFull) || bFull.includes(cleanPerson))) {
+            return b;
+        }
+    }
+
+    // 2. Match First Name + (Last Name token or known branch lastName)
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const b of parsedBirthdays) {
+        const bFirst = (b.first || '').toLowerCase().trim();
+        const bLast = (b.last || '').toLowerCase().trim();
+        if (!bFirst) continue;
+
+        // Check if first name matches any token
+        const firstMatches = tokens.some(t => t === bFirst || bFirst.startsWith(t) || t.startsWith(bFirst));
+        if (!firstMatches) continue;
+
+        let score = 1;
+        // Check if last name matches token or candidate list
+        const lastInTokens = tokens.some(t => t === bLast || (bLast && t.includes(bLast)) || (bLast && bLast.includes(t)));
+        const lastInCandidates = lastNameCandidates.some(c => c === bLast || (bLast && c.includes(bLast)) || (bLast && bLast.includes(c)));
+
+        if (lastInTokens) score += 3;
+        else if (lastInCandidates) score += 2;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = b;
+        }
+    }
+
+    return bestScore >= 2 ? bestMatch : null;
+}
+
+function processBirthdaysCSV(csvText) {
+    const list = [];
+    if (!csvText) return list;
+
+    const rows = parseCSV(csvText);
+    if (rows.length <= 1) return list;
+
+    for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r.length < 2) continue;
+        const last = (r[0] || '').trim();
+        const first = (r[1] || '').trim();
+        const engRaw = (r[2] || '').trim();
+        const hebRaw = (r[3] || '').trim();
+
+        if (!first && !last) continue;
+
+        const parsedEng = parseEnglishBirthdayString(engRaw);
+        const parsedHeb = parseHebrewBirthdayString(hebRaw);
+
+        list.push({
+            last,
+            first,
+            fullName: `${first} ${last}`.trim(),
+            englishRaw: engRaw,
+            hebrewRaw: hebRaw,
+            englishParsed: parsedEng,
+            hebrewParsed: parsedHeb
+        });
+    }
+    return list;
+}
+
+async function loadBirthdays() {
+    let csvText = null;
+    for (const proxyFn of CORS_PROXIES) {
+        try {
+            csvText = await fetchWithProxy(BIRTHDAYS_EXPORT_URL, proxyFn);
+            if (csvText && (csvText.includes('Last') || csvText.includes('Birthday') || csvText.includes('Tendler') || csvText.includes('Charner'))) {
+                break;
+            }
+            csvText = null;
+        } catch (e) {
+            csvText = null;
+        }
+    }
+    
+    // Process live data if available
+    const liveList = csvText ? processBirthdaysCSV(csvText) : [];
+    // Process fallback data
+    const fallbackList = typeof FALLBACK_BIRTHDAYS_CSV !== "undefined" ? processBirthdaysCSV(FALLBACK_BIRTHDAYS_CSV) : [];
+
+    if (liveList.length === 0) {
+        parsedBirthdays = fallbackList;
+    } else {
+        // Merge: use live list as base, but enrich with fallback dates if live row is missing English or Hebrew date
+        parsedBirthdays = liveList.map(item => {
+            const fb = fallbackList.find(f => 
+                (f.last || '').toLowerCase() === (item.last || '').toLowerCase() && 
+                (f.first || '').toLowerCase() === (item.first || '').toLowerCase()
+            );
+            if (fb) {
+                const engRaw = item.englishRaw || fb.englishRaw;
+                const hebRaw = item.hebrewRaw || fb.hebrewRaw;
+                return {
+                    ...item,
+                    englishRaw: engRaw,
+                    hebrewRaw: hebRaw,
+                    englishParsed: item.englishParsed || fb.englishParsed,
+                    hebrewParsed: item.hebrewParsed || fb.hebrewParsed
+                };
+            }
+            return item;
+        });
+
+        // Also add any fallback entries not present in live
+        fallbackList.forEach(fb => {
+            const exists = parsedBirthdays.some(p => 
+                (p.last || '').toLowerCase() === (fb.last || '').toLowerCase() && 
+                (p.first || '').toLowerCase() === (fb.first || '').toLowerCase()
+            );
+            if (!exists) {
+                parsedBirthdays.push(fb);
+            }
+        });
+    }
+}
+
+function renderBirthdayPopup(triggerUserAction = false) {
+    const modal = document.getElementById('birthdays-popup-modal');
+    const banner = document.getElementById('bday-popup-today-banner');
+    const todayList = document.getElementById('bday-today-list');
+    const recentList = document.getElementById('bday-recent-list');
+    const upcomingList = document.getElementById('bday-upcoming-list');
+
+    if (!modal || !todayList || !recentList || !upcomingList) return;
+
+    const now = new Date();
+    const todayHDate = getHebrewDateInfo(now);
+    const enTodayStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const heTodayStr = `${formatHebrewDayName(todayHDate.day)} ${todayHDate.monthHe || todayHDate.month} ${todayHDate.year}`;
+
+    if (banner) {
+        banner.textContent = `Today: ${enTodayStr} • ${heTodayStr}`;
+    }
+
+    const todayMatches = [];
+    const recentMatches = [];
+    const upcomingMatches = [];
+
+    parsedBirthdays.forEach(person => {
+        if (!person.englishParsed && !person.hebrewParsed) return;
+
+        // 1. Check Today
+        let isTodayEng = matchesEnglishDate(person.englishParsed, now);
+        let isTodayHeb = matchesHebrewDate(person.hebrewParsed, todayHDate);
+        if (isTodayEng || isTodayHeb) {
+            todayMatches.push({
+                person,
+                reason: isTodayHeb && isTodayEng ? 'Hebrew & English Today' : isTodayHeb ? 'Hebrew Birthday Today' : 'English Birthday Today'
+            });
+            return;
+        }
+
+        // 2. Check Last 7 Days (Days -1 to -7)
+        for (let diff = 1; diff <= 7; diff++) {
+            const pastDate = new Date(now.getTime() - diff * 86400000);
+            const pastHDate = getHebrewDateInfo(pastDate);
+            const isPastEng = matchesEnglishDate(person.englishParsed, pastDate);
+            const isPastHeb = matchesHebrewDate(person.hebrewParsed, pastHDate);
+            if (isPastEng || isPastHeb) {
+                const daysAgoStr = diff === 1 ? '1 day ago' : `${diff} days ago`;
+                recentMatches.push({
+                    person,
+                    diff: -diff,
+                    daysAgoStr,
+                    reason: isPastHeb && isPastEng ? `Hebrew & English (${daysAgoStr})` : isPastHeb ? `Hebrew (${daysAgoStr})` : `English (${daysAgoStr})`
+                });
+                return;
+            }
+        }
+
+        // 3. Check Next 7 Days (Days +1 to +7)
+        for (let diff = 1; diff <= 7; diff++) {
+            const futureDate = new Date(now.getTime() + diff * 86400000);
+            const futureHDate = getHebrewDateInfo(futureDate);
+            const isFutEng = matchesEnglishDate(person.englishParsed, futureDate);
+            const isFutHeb = matchesHebrewDate(person.hebrewParsed, futureHDate);
+            if (isFutEng || isFutHeb) {
+                const inDaysStr = diff === 1 ? 'Tomorrow' : `in ${diff} days`;
+                upcomingMatches.push({
+                    person,
+                    diff,
+                    inDaysStr,
+                    reason: isFutHeb && isFutEng ? `Hebrew & English (${inDaysStr})` : isFutHeb ? `Hebrew (${inDaysStr})` : `English (${inDaysStr})`
+                });
+                return;
+            }
+        }
+    });
+
+    // Populate Today's List
+    if (todayMatches.length > 0) {
+        todayList.innerHTML = todayMatches.map(m => `
+            <div class="bday-item today-item">
+                <div class="bday-name">🎂 ${escapeHtml(m.person.fullName)}</div>
+                <div class="bday-tags">
+                    <span class="bday-badge gold">${escapeHtml(m.reason)}</span>
+                    ${m.person.hebrewRaw ? `<span class="bday-badge">${escapeHtml(m.person.hebrewRaw)}</span>` : ''}
+                    ${m.person.englishRaw ? `<span class="bday-badge">${escapeHtml(m.person.englishRaw)}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        todayList.innerHTML = '<p class="bday-empty">No birthdays today.</p>';
+    }
+
+    // Populate Recent List
+    if (recentMatches.length > 0) {
+        recentMatches.sort((a, b) => b.diff - a.diff); // closer days first
+        recentList.innerHTML = recentMatches.map(m => `
+            <div class="bday-item">
+                <div class="bday-name">${escapeHtml(m.person.fullName)}</div>
+                <div class="bday-tags">
+                    <span class="bday-badge">${escapeHtml(m.reason)}</span>
+                    ${m.person.hebrewRaw ? `<span class="bday-badge">${escapeHtml(m.person.hebrewRaw)}</span>` : ''}
+                    ${m.person.englishRaw ? `<span class="bday-badge">${escapeHtml(m.person.englishRaw)}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        recentList.innerHTML = '<p class="bday-empty">No birthdays in the last 7 days.</p>';
+    }
+
+    // Populate Upcoming List
+    if (upcomingMatches.length > 0) {
+        upcomingMatches.sort((a, b) => a.diff - b.diff);
+        upcomingList.innerHTML = upcomingMatches.map(m => `
+            <div class="bday-item">
+                <div class="bday-name">${escapeHtml(m.person.fullName)}</div>
+                <div class="bday-tags">
+                    <span class="bday-badge">${escapeHtml(m.reason)}</span>
+                    ${m.person.hebrewRaw ? `<span class="bday-badge">${escapeHtml(m.person.hebrewRaw)}</span>` : ''}
+                    ${m.person.englishRaw ? `<span class="bday-badge">${escapeHtml(m.person.englishRaw)}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        upcomingList.innerHTML = '<p class="bday-empty">No birthdays in the next 7 days.</p>';
+    }
+
+    // Only show automatically on page load if there are birthdays today or recent/upcoming, or when triggered by button
+    if (triggerUserAction || todayMatches.length > 0 || recentMatches.length > 0 || upcomingMatches.length > 0) {
+        modal.style.display = 'flex';
+    }
+}
+
+function setupBirthdayPopup() {
+    const btn = document.getElementById('birthdays-btn');
+    const modal = document.getElementById('birthdays-popup-modal');
+    const overlay = document.getElementById('bday-popup-overlay');
+    const closeBtn = document.getElementById('bday-popup-close');
+    const dismissBtn = document.getElementById('bday-popup-dismiss');
+
+    if (btn) {
+        btn.addEventListener('click', () => {
+            renderBirthdayPopup(true);
+        });
+    }
+
+    const hide = () => {
+        if (modal) modal.style.display = 'none';
+    };
+
+    if (overlay) overlay.addEventListener('click', hide);
+    if (closeBtn) closeBtn.addEventListener('click', hide);
+    if (dismissBtn) dismissBtn.addEventListener('click', hide);
+}
+
+function getBirthdaysForNode(node) {
+    if (!node) return [];
+    const results = [];
+
+    // Derive possible last names for this branch/person
+    const nameParts = (node.name || '').trim().split(/\s+/);
+    const branchLastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+    const possibleLastNames = [branchLastName, 'Tendler', 'Fried', 'Oren', 'Rappaport', 'Leibowitz', 'Kreiger', 'Bohorodzaner', 'Charner', 'Rosner', 'Kaufman', 'Recht', 'Shoff', 'Shub', 'Schiller', 'Goldman', 'Groll', 'Warn', 'Donaty', 'Bitter', 'Rosensweig', 'Krumbein', 'Ben-Dovid', 'Ben-David', 'Shrem', 'Paley', 'Gefen', 'Ishon', 'Kazarnovsky', 'Jacobowitz'].filter(Boolean);
+
+    // 1. Primary person
+    const b1 = findBirthdayForPerson(node.name, possibleLastNames);
+    if (b1 && (b1.englishRaw || b1.hebrewRaw)) {
+        results.push({ name: node.name, role: 'primary', data: b1 });
+    }
+
+    // 2. Spouse (if married)
+    if (node.spouseName) {
+        const spouseLastNames = [node.maidenName, branchLastName, ...possibleLastNames].filter(Boolean);
+        const b2 = findBirthdayForPerson(node.spouseName, spouseLastNames);
+        if (b2 && (b2.englishRaw || b2.hebrewRaw) && (!b1 || b2 !== b1)) {
+            results.push({ name: node.spouseName, role: 'spouse', data: b2 });
+        }
+    }
+
+    return results;
+}
+
+function showPersonBirthdayModal(node) {
+    const modal = document.getElementById('person-birthday-modal');
+    const titleEl = document.getElementById('person-bday-title');
+    const subtitleEl = document.getElementById('person-bday-subtitle');
+    const bodyEl = document.getElementById('person-bday-body');
+
+    if (!modal || !bodyEl) return;
+
+    const bdays = getBirthdaysForNode(node);
+    let displayName = node.name;
+    if (node.spouseName) displayName += ` & ${node.spouseName}`;
+
+    titleEl.textContent = '🎂 Birthday Information';
+    subtitleEl.textContent = `Birthdays for ${displayName}`;
+
+    if (bdays.length === 0) {
+        bodyEl.innerHTML = `
+            <div style="text-align: center; padding: 1.5rem 0.5rem;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📅</div>
+                <p style="color: var(--text-primary); font-weight: 500;">No birthday on record yet for ${escapeHtml(displayName)}.</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">You can add their birthday using the <strong>Add Member</strong> button above.</p>
+            </div>
+        `;
+    } else {
+        bodyEl.innerHTML = bdays.map(item => `
+            <div class="bday-section" style="margin-bottom: 0.75rem;">
+                <h4 class="bday-section-title" style="color: var(--gold-200); font-size: 1rem;">
+                    👤 ${escapeHtml(item.name)} ${item.role === 'spouse' ? '<span style="font-size: 0.8rem; opacity: 0.7; font-weight: normal;">(Spouse)</span>' : ''}
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                        <span>🎂 <strong>English:</strong></span>
+                        <span style="color: var(--text-primary);">${item.data.englishRaw ? escapeHtml(item.data.englishRaw) : '<span style="color:var(--text-muted); font-style:italic;">Not listed</span>'}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                        <span>📜 <strong>Hebrew:</strong></span>
+                        <span style="color: var(--gold-200); font-weight: 500;">${item.data.hebrewRaw ? escapeHtml(item.data.hebrewRaw) : '<span style="color:var(--text-muted); font-style:italic;">Not listed</span>'}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    modal.style.display = 'flex';
+}
+
+function hidePersonBirthdayModal() {
+    const modal = document.getElementById('person-birthday-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function setupPersonBirthdayModal() {
+    const overlay = document.getElementById('person-bday-overlay');
+    const closeBtn = document.getElementById('person-bday-close');
+    const dismissBtn = document.getElementById('person-bday-dismiss');
+
+    if (overlay) overlay.addEventListener('click', hidePersonBirthdayModal);
+    if (closeBtn) closeBtn.addEventListener('click', hidePersonBirthdayModal);
+    if (dismissBtn) dismissBtn.addEventListener('click', hidePersonBirthdayModal);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hidePersonBirthdayModal();
+        }
+    });
+}
+
 function setupContactModal() {
     const overlay = document.getElementById('contact-modal-overlay');
     const closeBtn = document.getElementById('contact-modal-close');
@@ -1039,6 +1612,10 @@ function showContactModal(contact, nodeDisplayName) {
     const addrText = document.getElementById('contact-address-text');
     const emailContainer = document.getElementById('contact-field-email');
     const emailLinks = document.getElementById('contact-email-links');
+    const bdayContainer = document.getElementById('contact-field-birthday');
+    const bdayText = document.getElementById('contact-birthday-text');
+    const hebrewBdayContainer = document.getElementById('contact-field-hebrew-birthday');
+    const hebrewBdayText = document.getElementById('contact-hebrew-birthday-text');
 
     if (!modal) return;
 
@@ -1048,6 +1625,22 @@ function showContactModal(contact, nodeDisplayName) {
         
     titleEl.textContent = headerTitle;
     subtitleEl.textContent = `Contact Info for ${nodeDisplayName || contact.last}`;
+
+    // Find birthday info for this contact/person
+    const bdayMatch = findBirthdayForPerson(nodeDisplayName || (contact.first + ' ' + contact.last), contact);
+    if (bdayMatch && bdayMatch.englishRaw) {
+        bdayText.textContent = bdayMatch.englishRaw;
+        if (bdayContainer) bdayContainer.style.display = 'flex';
+    } else if (bdayContainer) {
+        bdayContainer.style.display = 'none';
+    }
+
+    if (bdayMatch && bdayMatch.hebrewRaw) {
+        hebrewBdayText.textContent = bdayMatch.hebrewRaw;
+        if (hebrewBdayContainer) hebrewBdayContainer.style.display = 'flex';
+    } else if (hebrewBdayContainer) {
+        hebrewBdayContainer.style.display = 'none';
+    }
 
     const addrParts = [contact.street, contact.city, contact.state, contact.zip].filter(Boolean);
 
@@ -1155,9 +1748,362 @@ function setupBHPrompt() {
         });
     }
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
-            hideBHModal();
+}
+
+let currentTreeData = null;
+
+function getAllNodes(root) {
+    if (!root) return [];
+    const list = [];
+    function traverse(node) {
+        list.push(node);
+        if (node.children) {
+            node.children.forEach(traverse);
+        }
+    }
+    traverse(root);
+    return list;
+}
+
+function setupAddMemberModal() {
+    const addBtn = document.getElementById('add-member-btn');
+    const modal = document.getElementById('add-member-modal');
+    const overlay = document.getElementById('add-modal-overlay');
+    const closeBtn = document.getElementById('add-modal-close');
+    const cancelBtn = document.getElementById('add-modal-cancel');
+    const form = document.getElementById('add-member-form');
+    const addTypeSelect = document.getElementById('add-type');
+    const parentSearch = document.getElementById('parent-search');
+    const parentDropdown = document.getElementById('parent-search-dropdown');
+    const parentHidden = document.getElementById('parent-select-value');
+    const parentDisplay = document.getElementById('parent-selected-display');
+    const parentSelectLabel = document.getElementById('parent-select-label');
+    const lastNameLabel = document.getElementById('last-name-label');
+    const resultBox = document.getElementById('add-result-box');
+    const doneBtn = document.getElementById('add-result-done');
+    const bdayMonth = document.getElementById('bday-month');
+    const bdayDay = document.getElementById('bday-day');
+    const bdayYear = document.getElementById('bday-year');
+    const bdayHebrewDay = document.getElementById('bday-hebrew-day');
+    const bdayHebrewMonth = document.getElementById('bday-hebrew-month');
+    const submitStatus = document.getElementById('submit-status');
+    const spouseOnlyFields = document.querySelectorAll('.spouse-only-field');
+
+    if (!addBtn || !modal) return;
+
+    // --- Populate birthday day & year dropdowns ---
+    if (bdayDay && bdayDay.options.length <= 1) {
+        for (let d = 1; d <= 31; d++) {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            bdayDay.appendChild(opt);
+        }
+    }
+    if (bdayYear && bdayYear.options.length <= 1) {
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear; y >= 1920; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            bdayYear.appendChild(opt);
+        }
+    }
+
+    function getBirthdayString() {
+        if (!bdayMonth || !bdayDay) return '';
+        const m = bdayMonth.value;
+        const d = bdayDay.value;
+        const y = bdayYear ? bdayYear.value : '';
+        if (!m && !d && !y) return '';
+        let parts = [];
+        if (m) parts.push(m);
+        if (d) parts.push(d + ',');
+        if (y) parts.push(y);
+        return parts.join(' ').replace(/, ?$/, '');
+    }
+
+    function getHebrewBirthdayString() {
+        if (!bdayHebrewDay || !bdayHebrewMonth) return '';
+        const dVal = bdayHebrewDay.value;
+        const mVal = bdayHebrewMonth.value;
+        if (!dVal && !mVal) return '';
+        const dText = dVal ? formatHebrewDayName(parseHebrewBirthdayString(dVal + ' ' + (mVal || 'תשרי'))?.day || 1) : '';
+        return [dText, mVal].filter(Boolean).join(' ');
+    }
+
+    // --- Toggle spouse-only fields ---
+    function updateFieldVisibility() {
+        const isSpouse = addTypeSelect.value === 'spouse';
+        spouseOnlyFields.forEach(el => {
+            if (isSpouse) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+    }
+
+    // --- Parent search ---
+    let parentOptions = [];
+
+    function buildParentOptions() {
+        const allNodes = getAllNodes(currentTreeData);
+        parentOptions = [];
+        const isSpouse = addTypeSelect.value === 'spouse';
+        parentSelectLabel.textContent = isSpouse ? 'Who are they joining?' : 'Select Parent(s):';
+        lastNameLabel.textContent = isSpouse ? 'New Spouse\'s Last Name / Maiden Name' : 'Last Name (Optional)';
+
+        allNodes.forEach((node, idx) => {
+            if (isSpouse) {
+                if (!node.spouseName) {
+                    parentOptions.push({ idx, label: node.name, node });
+                }
+            } else {
+                let label = node.name;
+                if (node.spouseName) label += ` & ${node.spouseName}`;
+                parentOptions.push({ idx, label, node });
+            }
+        });
+    }
+
+    function renderDropdown(query) {
+        parentDropdown.innerHTML = '';
+        const q = (query || '').toLowerCase().trim();
+        const filtered = q ? parentOptions.filter(o => o.label.toLowerCase().includes(q)) : parentOptions;
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'ps-option';
+            empty.textContent = q ? 'No matches found' : 'No members available';
+            empty.style.opacity = '0.5';
+            empty.style.cursor = 'default';
+            parentDropdown.appendChild(empty);
+        } else {
+            filtered.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'ps-option';
+                div.textContent = opt.label;
+                div.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectParent(opt);
+                });
+                parentDropdown.appendChild(div);
+            });
+        }
+        parentDropdown.style.display = 'block';
+    }
+
+    function selectParent(opt) {
+        parentHidden.value = opt.idx;
+        parentSearch.value = '';
+        parentDropdown.style.display = 'none';
+        parentDisplay.innerHTML = `<span>${opt.label}</span><span class="ps-clear" title="Clear selection">✕</span>`;
+        parentDisplay.style.display = 'inline-flex';
+        parentSearch.style.display = 'none';
+        parentDisplay.querySelector('.ps-clear').addEventListener('click', clearSelection);
+    }
+
+    function clearSelection() {
+        parentHidden.value = '';
+        parentDisplay.style.display = 'none';
+        parentSearch.style.display = '';
+        parentSearch.value = '';
+        parentSearch.focus();
+    }
+
+    // --- Status indicator ---
+    function showStatus(msg, type) {
+        submitStatus.textContent = msg;
+        submitStatus.className = 'submit-status ' + type;
+        submitStatus.style.display = 'block';
+    }
+    function hideStatus() {
+        submitStatus.style.display = 'none';
+    }
+
+    // --- Modal open/close ---
+    function openModal() {
+        if (!currentTreeData) {
+            try {
+                currentTreeData = parseGoogleDocText(FALLBACK_DATA);
+            } catch (e) {
+                console.error('Could not load tree data for modal:', e);
+            }
+        }
+        if (!currentTreeData) return;
+        buildParentOptions();
+        clearSelection();
+        updateFieldVisibility();
+        hideStatus();
+        form.style.display = 'flex';
+        resultBox.style.display = 'none';
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        form.reset();
+        parentDropdown.style.display = 'none';
+        clearSelection();
+        hideStatus();
+    }
+
+    // --- Event listeners ---
+    addBtn.addEventListener('click', openModal);
+    if (overlay) overlay.addEventListener('click', closeModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (doneBtn) doneBtn.addEventListener('click', closeModal);
+
+    addTypeSelect.addEventListener('change', () => {
+        buildParentOptions();
+        clearSelection();
+        updateFieldVisibility();
+    });
+
+    parentSearch.addEventListener('focus', () => renderDropdown(parentSearch.value));
+    parentSearch.addEventListener('input', () => renderDropdown(parentSearch.value));
+    parentSearch.addEventListener('blur', () => {
+        setTimeout(() => { parentDropdown.style.display = 'none'; }, 150);
+    });
+
+    // --- Form submission ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const addType = addTypeSelect.value;
+        const allNodes = getAllNodes(currentTreeData);
+        const selectedIdx = parentHidden.value;
+        if (selectedIdx === '' || !allNodes[selectedIdx]) return;
+
+        const targetNode = allNodes[selectedIdx];
+        const firstName = document.getElementById('new-first-name').value.trim();
+        const lastName = (addType === 'spouse') ? (document.getElementById('new-last-name').value.trim()) : '';
+        const birthday = getBirthdayString();
+        const hebrewBirthday = getHebrewBirthdayString();
+        const email = (addType === 'spouse') ? (document.getElementById('new-email').value.trim()) : '';
+        const address = (addType === 'spouse') ? (document.getElementById('new-address').value.trim()) : '';
+
+        let gdocSnippet = '';
+        let bdaySnippet = '';
+        let contactSnippet = '';
+
+        // Determine parent's last name from tree context
+        const parentLastName = targetNode.name.split(' ').slice(-1)[0] || 'Tendler';
+        const finalLastName = lastName || parentLastName;
+
+        if (addType === 'spouse') {
+            targetNode.spouseName = firstName;
+            if (lastName) {
+                targetNode.maidenName = lastName;
+            }
+            gdocSnippet = `${targetNode.name} and ${firstName}${lastName ? ' (' + lastName + ')' : ''}`;
+            bdaySnippet = `${finalLastName}\t${firstName}\t${birthday}\t${hebrewBirthday}`;
+            if (email || address) {
+                contactSnippet = `${finalLastName}\t${targetNode.name} & ${firstName}\tMr. & Mrs.\t${address}\t${email}`;
+            }
+        } else {
+            if (!targetNode.children) targetNode.children = [];
+            const newNode = {
+                name: firstName,
+                children: [],
+                depth: (targetNode.depth || 1) + 1,
+                number: targetNode.children.length + 1
+            };
+            targetNode.children.push(newNode);
+
+            const indent = '   '.repeat(newNode.depth - 1);
+            gdocSnippet = `${indent}* ${firstName}`;
+            bdaySnippet = `${finalLastName}\t${firstName}\t${birthday}\t${hebrewBirthday}`;
+        }
+
+        if (birthday || hebrewBirthday) {
+            parsedBirthdays.push({
+                last: finalLastName,
+                first: firstName,
+                fullName: `${firstName} ${finalLastName}`.trim(),
+                englishRaw: birthday,
+                hebrewRaw: hebrewBirthday,
+                englishParsed: parseEnglishBirthdayString(birthday),
+                hebrewParsed: parseHebrewBirthdayString(hebrewBirthday)
+            });
+        }
+
+        if (addType === 'spouse' && (email || address)) {
+            parsedContacts.push({
+                title: targetNode.name + (firstName ? ' & ' + firstName : ''),
+                first: firstName,
+                last: finalLastName,
+                street: address,
+                emails: email ? [email] : []
+            });
+        }
+
+        // Re-render live tree with updated data
+        renderTree(currentTreeData);
+
+        // Display copyable results
+        document.getElementById('result-gdoc-text').value = gdocSnippet;
+        document.getElementById('result-birthday-text').value = bdaySnippet;
+        
+        const contactSec = document.getElementById('result-contact-section');
+        if (contactSnippet) {
+            document.getElementById('result-contact-text').value = contactSnippet;
+            contactSec.style.display = 'block';
+        } else {
+            contactSec.style.display = 'none';
+        }
+
+        form.style.display = 'none';
+        resultBox.style.display = 'flex';
+
+        // --- POST to Google Apps Script backend ---
+        if (typeof APPS_SCRIPT_URL !== 'undefined' && APPS_SCRIPT_URL) {
+            showStatus('Saving to Google Docs & Sheets…', 'saving');
+            try {
+                const payload = {
+                    type: addType,
+                    parentName: targetNode.name,
+                    parentSpouse: targetNode.spouseName || '',
+                    firstName: firstName,
+                    lastName: lastName,
+                    birthday: birthday,
+                    hebrewBirthday: hebrewBirthday,
+                    email: email,
+                    address: address,
+                    gdocSnippet: gdocSnippet
+                };
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await resp.json();
+                if (result.status === 'ok') {
+                    showStatus('✓ Saved to Google Doc & Sheets!', 'success');
+                } else {
+                    showStatus('⚠ Saved locally, but Google update had an issue: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (err) {
+                console.error('Apps Script POST error:', err);
+                showStatus('⚠ Saved locally. Could not reach Google backend — use the copy buttons above to update manually.', 'error');
+            }
+        }
+    });
+
+    ['gdoc', 'birthday', 'contact'].forEach(type => {
+        const btn = document.getElementById(`copy-${type}-btn`);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const textarea = document.getElementById(`result-${type}-text`);
+                if (textarea) {
+                    textarea.select();
+                    navigator.clipboard.writeText(textarea.value);
+                    const orig = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = orig; }, 1500);
+                }
+            });
         }
     });
 }
@@ -1206,8 +2152,9 @@ async function loadFamilyTree() {
     errorEl.style.display = 'none';
     treeRoot.innerHTML = '';
     
-    // Load contacts spreadsheet
+    // Load contacts spreadsheet and birthdays
     await loadContacts();
+    await loadBirthdays();
     
     let rawText = null;
     let lastError = null;
@@ -1244,6 +2191,7 @@ async function loadFamilyTree() {
     
     try {
         const tree = parseGoogleDocText(rawText);
+        currentTreeData = tree;
         renderTree(tree);
         
         // Update last refresh time
@@ -1262,6 +2210,10 @@ async function loadFamilyTree() {
             header.setAttribute('aria-expanded', 'true');
             if (content) content.classList.add('expanded');
         });
+
+        // Load birthdays tab and show popup if birthdays found
+        await loadBirthdays();
+        renderBirthdayPopup(false);
         
     } catch (e) {
         console.error('Parse error:', e);
@@ -1648,6 +2600,9 @@ oren,Chaim and Hagit,Mr & Mrs,827 Shifon st.,"Haspin, Golan heights ",israel,129
 Geffen,Tehilla Rivka and Sagi,Mr & Mrs,Asirey Zion st. ,Beer Sheva,Israel,,lally1.oren@gmail.com,
 `;
 
+
+const FALLBACK_BIRTHDAYS_CSV = "\"Last Name  Tendler Feinstein Rappaport Rappaport Hainovitz Hainovitz Gnatek Gnatek Hainovitz Hainovitz Hainovitz Hainovitz Reinstein Reinstein Reinstein Katan Reinstein Reinstein Reinstein Goldberg Reinstein Chaimov? Reinstein Rappaport Ki-Tov Tunik Tunik Tunik Tunik Tunik Perlow Perlow Perlow Perlow Perlow Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Meirson Meirson Meirson Meirson Meirson Meirson Meirson Meirson Meirson Shlomi Shlomi Shlomi Shlomi Shlomi Shlomi Shlomi Kunin Kunin Kunin Kunin Kunin Kunin Rappaport Tanenbaum Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Rappaport Roth Rappaport Rappaport Rappaport Rappaport Rappaport Dvir Dvir Dvir Dvir Tendler Geffen Tendler Rothenberg Tendler Leibowitz Leibowitz Bersin Bersin Bersin Bersin Bersin Bersin Greenberg Greenberg Greenberg Leibowitz Weiss Leibowitz Leibowitz Valt Valt Leibowitz Tendler Ovitz Tendler Tendler Tendler Tendler Tendler Kreiger Kreiger Kreiger Kreiger Kreiger Tendler Sebbag Tendler Tendler Bohorodzaner Bohorodzaner Bohorodzaner Bohorodzaner Bohorodzaner Bohorodzaner Tendler Kahane Tendler Tendler Tendler Jofen\",\"First Name  Moshe David Shifra/Sifra Rivky Shabtai Hodiya Ita Yonatan Hadarelle Dina Sima Matanya Menachem Mendel Shaul Ariel Hillel Gavriel Sara Tzion Shifra Miriam Chana Tzvika Eliya Bat El Stav Dror Nachum Shaul Ori Roni Eitan Yaakov Menuchah Aviad Shmuel Avigayil Ayala Yehoshua Hodaya Moshe Malachi Sima Natan David Hallel Shlomo Shaul Chana Eliyahu Sara Shifra Yisroel Meir Tehila Orah Ovadya Yosef Hadassah Elisheva Shuki (Yehoshua) Tal Or Bracha Noga Oriya Noam Matityahu Sara Shifra Aron Simcha Milka Devora Sima Adi Ahava Bella Atara Michael Malachy Yehuda Yair Asaf Chai Shachar Mevaser Ziv Moshe Ruti (Rut Tehila) Noach Michael Yaacov Shifra Ahava Yona Yitzchak Chaya Carmel Yitzchak Issac Eliana Rachel Naftali Ariel Shifra Shira Oriya Nechama Shaul Amichai Noam Shalom Aryeh Lavi Kaila Tzion Yisrael Shalom Rivky Rimon Malka Dvash Mayim Eretz Yonah Shauli Shimi (Shima Shalomtzion Simcha) Uriya Imri Yarden Jenya Yacov Yael Aron Tiffany Maribel Miriam Fia Avi Shoshana Chaya Ashi Chava Esther Hadassah Baila Golda Malka Moshe Dov Ahuva Yehuda Leora Sima Meir Simcha Aleeza Kayla Devora Shmuel Tzipporah Ezriel Yehoshua Benzion Avraham Shimon Chanie Akiva Shifra Hadas Ester Rimon Yitzchak Eliyahu Talia Devora Bella Dovid Jetta Pearl Sienna Rose/ Sima Chana Olivia Patrice/Luba Shifra Shlomo Sarah Ayden Eliyahu Ilan Chai Esther Avi Ava Shifra Jamie/ Chaim Meir Sima Liel Yitzchak Moshe Tuvia Kelila Emil Sifra/ Amalia Shifra Theodora Eve (Thea), Adira Chaya Mordecai Michelle\",\"Birthday Date (spell out month to avoid confusion) August 7th July 28th November 22nd April 14th August 30th October 8th August 1st May 3rd \",\"Jewish Birthday  כ״ז אב כו תמוז יד כסליו ט ניסן כ אלול ד חשוון כו תמוז ב אייר \",\"\",\"\",\"\",\"\"\n\"Charner\",\"Leah\",\"September 8\",\"כ\"\"ו אלול\",\"\",\"\",\"\",\"\"\n\"Charner\",\"Shlomo\",\"May 14\",\"כ\"\"ב אייר\",\"\",\"\",\"\",\"\"\n\"Slasky\",\"Sima\",\"June 9\",\"כ\"\"ה סיון\",\"\",\"\",\"\",\"\"\n\"Slasky\",\"Moishy\",\"\",\"י אב\",\"\",\"\",\"\",\"\"\n\"Slasky\",\"Dina\",\"\",\"ט\"\"ו תשרי\",\"\",\"\",\"\",\"\"\n\"Slasky\",\"Chana Devora\",\"\",\"ה אלול\",\"\",\"\",\"\",\"\"\n\"Slasky\",\"Tzvi (Nosson Tzvi) \",\"\",\"י טבת\",\"\",\"\",\"\",\"\"\n\"Fox\",\"Chaya Miriam\",\"June 15\",\"ט\"\"ו סיון\",\"\",\"\",\"\",\"\"\n\"Fox\",\"Shlomo Zalman\",\"\",\"כ\"\"ה טבת \",\"\",\"\",\"\",\"\"\n\"Charner\",\"Yakov Chaim\",\"June 15\",\"ט\"\"ו סיון\",\"\",\"\",\"\",\"\"\n\"Charner\",\"Yocheved\",\"December 27\",\"כ\"\"ז כסלו\",\"\",\"\",\"\",\"\"\n\"Charner\",\"Shifra\",\"March 22\",\"כ\"\"ו אדר\",\"\",\"\",\"\",\"\"\n\"Charner\",\"Tuvia\",\"July 24\",\"י\"\"ז אב\",\"\",\"\",\"\",\"\"\n\"Charner\",\"Esther Batsheva\",\"March 5\",\"ז אדר\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Rachel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Avi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Shlomo Menachem\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Heimowitz\",\"Chani\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Sarah Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Yosef Efraim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Yocheved\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Yitzchak\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Tzvi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosner\",\"Nechama\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Bella Shoshana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Moshe\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Neuwirth\",\"Simi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Neuwirth\",\"Yehuda\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Neuwirth\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Neuwirth\",\"Blumy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Faigy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Yocheved\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Avrami (Avraham Chaim)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Yaakov\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Ahron\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kaufman\",\"Yisroel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Rivka\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Yehoshua\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Tzvi (Menashe Tzvi)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Yosef Peretz\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Liba  (Liba Ahuva)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"Yocheved\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Recht\",\"(Fruma) Chana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Sara\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Elchanan\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Estee (Esther Faiga)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Yocheved\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Yaakov Chaim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Fraida Golda (Goldi)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Chaya Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shoff\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Tzipporah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Zev\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Yeshaya Avraham\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Yocheved\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Chaim Ahron\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shub\",\"Sima Basya\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Ariella\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Meir\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Yaakov Chaim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Aleeza Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Shifra Bella\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Rachel Chaya\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schiller\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Aharon Yosef\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Lerner\",\"Shaindy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Dina\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Devora Raizel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Aron Boruch\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shapiro\",\"Esther Tzipora\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Naomi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Yirachmiel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Cohen\",\"Sima Ariella\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Cohen\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Cohen\",\"Sara malka\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Cohen\",\"Shoshana Bella\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Chaim Zev\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Shifra Gittel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Shalom Eliyahu\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldman\",\"Yisrael Yosef\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzchak\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Eis\",\"Elisheva\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kreitenberg\",\"Chava Kayla\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kreitenberg\",\"Elisha\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Ezra Chaim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra Sara\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Hadasa Morielle\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Mordecai Hillel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Dina\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Avraham\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Chaim Tudres\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Miriam Chaya\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Shifra Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Atara Hadassa\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Groll\",\"Tehilla Menucha\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Warn\",\"Shoshana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Warn\",\"Yitz\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Warn\",\"Chaim Zev\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Warn\",\"Sara Hadassah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Warn\",\"Shifra Bella\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Elisheva\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Dany\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Meir Rachamim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Chaim Netanel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Donaty\",\"Baby girl\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Hillel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Hechtman\",\"Mashie\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Zevi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Frenkel\",\"Sarah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shmuel Yitzy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Tehila\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Esther Batya (Esti)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yosef Yehuda (Yossi)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Sholom Chaim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Gruman\",\"Rivky\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yaakov\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bender\",\"Miriam\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bender\",\"Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Rochel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Sara\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzchok Aryeh\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Batsheva\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Aron Gershon\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Spetner\",\"Naomi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yehuda\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Tziporah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yossi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yehudis\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yechiel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Eliezer\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Chana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Aryeh Mordechai\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Eli\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Brickman\",\"Shulamis\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Simi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Gavriel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Baruch\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Lieder\",\"Nechama\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yehudah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifrah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Raizel Miriam\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Zev\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Margalit Chana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Rikki\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Ephraim\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Shmuel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Yitzchak Aryeh\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Chava Sarah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Davis\",\"Shoshana Rela\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shlomo\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Gold\",\"Sarala\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Devorah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Avraham (Abie)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Shalva\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Sima\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yacov\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Berger\",\"Rivka\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Binyamin Tzvi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzchok Aryeh\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Esther\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Nussbaum\",\"Simi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Nussbaum\",\"Michoel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Nussbaum\",\"Shifra Ahuva\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Nussbaum\",\"Yitzchok Aryeh\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Nussbaum\",\"Esther\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldenberg\",\"Tamari\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldenberg\",\"Moishie\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldenberg\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Goldenberg\",\"Aryeh Mayer\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Sara\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Avraham\",\"July 8\",\"ב בתמוז\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Bella Renana\",\"November 15\",\"ב' כסלו\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Yosef\",\"February 23\",\"כ' אדר א'\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Noam Shimon\",\"March 12\",\"א' ניסן\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Tamar Shifra\",\"February 16\",\"ז' אדר א'\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Amitai Shlomo\",\"September 14\",\"ה' תשרי\",\"\",\"\",\"\",\"\"\n\"Krumbein\",\"Moshe Shalom\",\"March 24\",\"י\"\"ד אדר ב' (פורים)\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Chana Golda\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Tovia\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Maayan Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Yishai Michael\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Yehudah Dov\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Tal Batya\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Moshe\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ben-Dovid\",\"Lavie Aharon\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Chaim\",\"June 23\",\"כ' סיוון\",\"\",\"\",\"\",\"\"\n\"Zigler\",\"Hagit\",\"October 10\",\"י''א תשרי\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Hodaya\",\"April 24\",\"י''ד אייר\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Ori Shifra\",\"March 10\",\"י''ט אדר\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Hallel\",\"March 12\",\"כ''ה אדר\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Elad Moshe\",\"December 5\",\"ד' כסלו\",\"\",\"\",\"\",\"\"\n\"Schwartz\",\"Rachel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schwartz\",\"Elchanan\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schwartz\",\"Yuval Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schwartz\",\"Shoham Tova\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schwartz\",\"Tomer Baruch\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren-Harush\",\"Yechiel Mordechai\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren-Harush\",\"Dafna (Ben Harush)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren-Harush\",\"Akiva Yitzchak\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Shrem\",\"Simma\",\"October 18\",\"כד תשרי\",\"\",\"\",\"\",\"\"\n\"Shrem\",\"Avraham\",\"May 22\",\"י\"\"ט אייר\",\"\",\"\",\"\",\"\"\n\"Shrem\",\"David Ori\",\"September 26\",\"ד תשרי\",\"\",\"\",\"\",\"\"\n\"Paley\",\"Yaakov Shalom\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Paley\",\"Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Gefen\",\"Tehilla Rivka\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Gefen\",\"Sagi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Gefen\",\"Maor Ariel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ishon\",\"Leah Avital\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Ishon\",\"Ariel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Mass'et Shoshana\",\"\",\"י\"\"א אדר א'\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Russi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Sholom\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bitter\",\"Leah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bitter\",\"Eitan\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bitter\",\"Bella Sophia (Baila Tzipporah)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Bitter\",\"Moriya Chaya (Maya)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Yosef\",\"\",\"כ״ט כסלו\",\"\",\"\",\"\",\"\"\n\"Feldstein\",\"Tamar\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Devora Rivka (Rivky)\",\"\",\"כז חשון\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Yitzchak Isaac (Yitzy)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Yaakov Koppel\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Baila\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Yitzchak Isaac\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Fried\",\"Sima\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Rosensweig\",\"Rachel Fraidel\",\"March 2nd\",\"כ״ג אדר א\",\"\",\"\",\"\",\"\"\n\"Rosensweig\",\"Moshe\",\"July 9th\",\"כב' תמוז\",\"\",\"\",\"\",\"\"\n\"Rosensweig\",\"Miriam Shifra\",\"January 15th\",\"ה׳ שבט\",\"\",\"\",\"\",\"\"\n\"Rosensweig\",\"Chayim Betzalel\",\"September 2nd\",\"י״ח אלול\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Eli\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Schonkopf\",\"Racheli\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yossi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Pollak\",\"Yehudis\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Malca\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzchak Isaac\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Avraham Pinchos\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Avigdor\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Ari\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Hoffman\",\"Elky\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Kayla Hadassah\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Blima Esther (Rosie)\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Basya\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kazarnovsky\",\"Sima\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kazarnovsky\",\"Zevi\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kazarnovsky\",\"Shifra\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kazarnovsky\",\"Chana\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Kazarnovsky\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Jacobowitz\",\"Leora\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Jacobowitz\",\"Yakov\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Jacobowitz\",\"Moshe Dovid\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Jacobowitz\",\"Avraham\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Tendler\",\"Yitzy\",\"\",\"\",\"\",\"\",\"\",\"\"\n\"Oren\",\"Yaakov Shalom\",\"\",\"ו חשון \",\"\",\"\",\"\",\"\"\n\"Oren\",\"Leah\",\"\",\"כ\"\"ד ניסן\",\"\",\"\",\"\",\"\"";
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -1656,6 +2611,54 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControls();
     setupSearch();
     setupContactModal();
+    setupPersonBirthdayModal();
     setupBHPrompt();
+    setupBirthdayPopup();
+    setupAddMemberModal();
+    loadFamilyTree();
+});"Rosensweig","Miriam Shifra","January 15th","ה׳ שבט","","","",""
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupControls();
+    setupSearch();
+    setupContactModal();
+    setupPersonBirthdayModal();
+    setupBHPrompt();
+    setupBirthdayPopup();
+    setupAddMemberModal();
+    loadFamilyTree();
+});"Rosensweig","Chayim Betzalel","September 2nd","י״ח אלול","","","",""
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupControls();
+    setupSearch();
+    setupContactModal();
+    setupPersonBirthdayModal();
+    setupBHPrompt();
+    setupBirthdayPopup();
+    setupAddMemberModal();
+    loadFamilyTree();
+});"Rosensweig","Miriam Shifra","January 15th","ה׳ שבט","","","",""
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupControls();
+    setupSearch();
+    setupContactModal();
+    setupPersonBirthdayModal();
+    setupBHPrompt();
+    setupBirthdayPopup();
+    setupAddMemberModal();
     loadFamilyTree();
 });

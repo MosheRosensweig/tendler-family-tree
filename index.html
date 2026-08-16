@@ -53,6 +53,15 @@
             <span class="search-results" id="search-results"></span>
         </div>
         <div class="button-group">
+            <button class="btn btn-gold" id="birthdays-btn" title="View Upcoming & Recent Birthdays">
+                🎂 Birthdays
+            </button>
+            <button class="btn btn-gold" id="add-member-btn" title="Add a new family member" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add Member
+            </button>
             <button class="btn" id="expand-all" title="Expand All">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <path d="M6 9l6 6 6-6"/>
@@ -127,6 +136,20 @@
                 </div>
             </div>
             <div class="contact-modal-body">
+                <div class="contact-field" id="contact-field-birthday" style="display:none;">
+                    <div class="contact-field-icon">🎂</div>
+                    <div class="contact-field-content">
+                        <div class="contact-field-label">Birthday</div>
+                        <div class="contact-field-value" id="contact-birthday-text"></div>
+                    </div>
+                </div>
+                <div class="contact-field" id="contact-field-hebrew-birthday" style="display:none;">
+                    <div class="contact-field-icon">📜</div>
+                    <div class="contact-field-content">
+                        <div class="contact-field-label">Hebrew Birthday</div>
+                        <div class="contact-field-value" id="contact-hebrew-birthday-text"></div>
+                    </div>
+                </div>
                 <div class="contact-field" id="contact-field-address" style="display:none;">
                     <div class="contact-field-icon">📍</div>
                     <div class="contact-field-content">
@@ -144,6 +167,68 @@
             </div>
             <div class="contact-modal-footer">
                 <button class="btn btn-accent" id="contact-modal-dismiss">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Birthdays Popup Modal -->
+    <div id="birthdays-popup-modal" class="contact-modal" style="display:none;" role="dialog" aria-labelledby="bday-popup-title">
+        <div class="contact-modal-overlay" id="bday-popup-overlay"></div>
+        <div class="contact-modal-card bday-modal-card">
+            <button class="contact-modal-close" id="bday-popup-close" title="Dismiss">✕</button>
+            <div class="contact-modal-header">
+                <div class="contact-avatar">🎂</div>
+                <div>
+                    <h3 id="bday-popup-title">Family Birthdays</h3>
+                    <p class="contact-subtitle" id="bday-popup-today-banner">Today: Loading date...</p>
+                </div>
+            </div>
+            
+            <div class="contact-modal-body bday-popup-body">
+                <div class="bday-section">
+                    <h4 class="bday-section-title today-title">🎉 Today's Birthdays</h4>
+                    <div id="bday-today-list" class="bday-list">
+                        <p class="bday-empty">No birthdays today.</p>
+                    </div>
+                </div>
+
+                <div class="bday-section">
+                    <h4 class="bday-section-title">📅 In the Last 7 Days</h4>
+                    <div id="bday-recent-list" class="bday-list">
+                        <p class="bday-empty">No birthdays in the last 7 days.</p>
+                    </div>
+                </div>
+
+                <div class="bday-section">
+                    <h4 class="bday-section-title">✨ Coming Up (Next 7 Days)</h4>
+                    <div id="bday-upcoming-list" class="bday-list">
+                        <p class="bday-empty">No birthdays in the next 7 days.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-modal-footer">
+                <button class="btn btn-accent" id="bday-popup-dismiss">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Single / Couple Person Birthday Modal -->
+    <div id="person-birthday-modal" class="contact-modal" style="display:none;" role="dialog" aria-labelledby="person-bday-title">
+        <div class="contact-modal-overlay" id="person-bday-overlay"></div>
+        <div class="contact-modal-card">
+            <button class="contact-modal-close" id="person-bday-close" title="Dismiss">✕</button>
+            <div class="contact-modal-header">
+                <div class="contact-avatar">🎂</div>
+                <div>
+                    <h3 id="person-bday-title">Birthday Information</h3>
+                    <p id="person-bday-subtitle" class="contact-subtitle"></p>
+                </div>
+            </div>
+            <div class="contact-modal-body" id="person-bday-body">
+                <!-- Dynamically populated with individual/couple birthday cards -->
+            </div>
+            <div class="contact-modal-footer">
+                <button class="btn btn-accent" id="person-bday-dismiss">Close</button>
             </div>
         </div>
     </div>
@@ -171,6 +256,187 @@
             <div class="contact-modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
                 <button class="btn" id="bh-reveal-btn">Reveal Exact Count</button>
                 <button class="btn btn-accent" id="bh-keep-blessed-btn">Leave Blessed &amp; Uncounted</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Family Member Modal -->
+    <div id="add-member-modal" class="contact-modal" style="display:none;" role="dialog" aria-labelledby="add-modal-title">
+        <div class="contact-modal-overlay" id="add-modal-overlay"></div>
+        <div class="contact-modal-card add-modal-card">
+            <button class="contact-modal-close" id="add-modal-close" title="Dismiss">✕</button>
+            <div class="contact-modal-header">
+                <div class="contact-avatar">👤+</div>
+                <div>
+                    <h3 id="add-modal-title">Add Family Member</h3>
+                    <p class="contact-subtitle">Add a child or spouse to the family tree</p>
+                </div>
+            </div>
+            
+            <form id="add-member-form" class="add-member-form">
+                <div class="form-group">
+                    <label for="add-type">I want to add a:</label>
+                    <select id="add-type" class="form-control">
+                        <option value="child">Child</option>
+                        <option value="spouse">Spouse</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="parent-search" id="parent-select-label">Select Parent(s):</label>
+                    <div class="parent-search-wrapper">
+                        <input type="text" id="parent-search" class="form-control" placeholder="Search by name…" autocomplete="off">
+                        <div id="parent-search-dropdown" class="parent-search-dropdown" style="display:none;"></div>
+                    </div>
+                    <input type="hidden" id="parent-select-value" required>
+                    <div id="parent-selected-display" class="parent-selected-display" style="display:none;"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="new-first-name">First Name</label>
+                        <input type="text" id="new-first-name" class="form-control" placeholder="e.g. Moshe" required>
+                    </div>
+                    <div class="form-group flex-1 spouse-only-field" id="last-name-group">
+                        <label for="new-last-name" id="last-name-label">Last Name / Maiden Name</label>
+                        <input type="text" id="new-last-name" class="form-control" placeholder="e.g. Tendler">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>English Birthday (Optional)</label>
+                    <div class="birthday-row">
+                        <select id="bday-month" class="form-control">
+                            <option value="">Month (English)</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <select id="bday-day" class="form-control">
+                            <option value="">Day</option>
+                        </select>
+                        <select id="bday-year" class="form-control">
+                            <option value="">Year (Optional)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Hebrew Birthday (Optional)</label>
+                    <div class="birthday-row">
+                        <select id="bday-hebrew-day" class="form-control">
+                            <option value="">Day (יום)</option>
+                            <option value="א">א׳ (1)</option>
+                            <option value="ב">ב׳ (2)</option>
+                            <option value="ג">ג׳ (3)</option>
+                            <option value="ד">ד׳ (4)</option>
+                            <option value="ה">ה׳ (5)</option>
+                            <option value="ו">ו׳ (6)</option>
+                            <option value="ז">ז׳ (7)</option>
+                            <option value="ח">ח׳ (8)</option>
+                            <option value="ט">ט׳ (9)</option>
+                            <option value="י">י׳ (10)</option>
+                            <option value="יא">י״א (11)</option>
+                            <option value="יב">י״ב (12)</option>
+                            <option value="יג">י״ג (13)</option>
+                            <option value="יד">י״ד (14)</option>
+                            <option value="טו">ט״ו (15)</option>
+                            <option value="טז">ט״ז (16)</option>
+                            <option value="יז">י״ז (17)</option>
+                            <option value="יח">י״ח (18)</option>
+                            <option value="יט">י״ט (19)</option>
+                            <option value="כ">כ׳ (20)</option>
+                            <option value="כא">כ״א (21)</option>
+                            <option value="כב">כ״ב (22)</option>
+                            <option value="כג">כ״ג (23)</option>
+                            <option value="כד">כ״ד (24)</option>
+                            <option value="כה">כ״ה (25)</option>
+                            <option value="כו">כ״ו (26)</option>
+                            <option value="כז">כ״ז (27)</option>
+                            <option value="כח">כ״ח (28)</option>
+                            <option value="כט">כ״ט (29)</option>
+                            <option value="ל">ל׳ (30)</option>
+                        </select>
+                        <select id="bday-hebrew-month" class="form-control" style="flex: 1.6;">
+                            <option value="">Month (חודש)</option>
+                            <option value="תשרי">תשרי (Tishrei)</option>
+                            <option value="חשון">חשון (Cheshvan)</option>
+                            <option value="כסלו">כסלו (Kislev)</option>
+                            <option value="טבת">טבת (Tevet)</option>
+                            <option value="שבט">שבט (Shevat)</option>
+                            <option value="אדר">אדר (Adar - non-leap)</option>
+                            <option value="אדר א">אדר א׳ (Adar I - leap)</option>
+                            <option value="אדר ב">אדר ב׳ (Adar II - leap)</option>
+                            <option value="ניסן">ניסן (Nisan)</option>
+                            <option value="אייר">אייר (Iyyar)</option>
+                            <option value="סיון">סיון (Sivan)</option>
+                            <option value="תמוז">תמוז (Tamuz)</option>
+                            <option value="אב">אב (Av)</option>
+                            <option value="אלול">אלול (Elul)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="spouse-only-field">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="new-email">Email (Optional)</label>
+                            <input type="email" id="new-email" class="form-control" placeholder="e.g. name@example.com">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="new-address">Address / City (Optional)</label>
+                            <input type="text" id="new-address" class="form-control" placeholder="e.g. 123 Main St, Baltimore, MD">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="add-modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-gold" id="add-submit-btn">Add to Tree</button>
+                </div>
+                <div id="submit-status" class="submit-status" style="display:none;"></div>
+            </form>
+
+            <div id="add-result-box" class="add-result-box" style="display:none;">
+                <div class="result-header">🎉 Member Added to Live Tree!</div>
+                <p class="result-desc">The member has been added to your live tree view. Copy the formatted lines below to update your Google Doc and Spreadsheets:</p>
+                
+                <div class="result-section">
+                    <label>📄 Add to Google Doc:</label>
+                    <div class="copy-box">
+                        <textarea id="result-gdoc-text" readonly rows="2"></textarea>
+                        <button type="button" class="btn btn-sm" id="copy-gdoc-btn">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="result-section">
+                    <label>🎂 Add to Birthday Sheet:</label>
+                    <div class="copy-box">
+                        <textarea id="result-birthday-text" readonly rows="2"></textarea>
+                        <button type="button" class="btn btn-sm" id="copy-birthday-btn">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="result-section" id="result-contact-section" style="display:none;">
+                    <label>📇 Add to Contacts Sheet:</label>
+                    <div class="copy-box">
+                        <textarea id="result-contact-text" readonly rows="2"></textarea>
+                        <button type="button" class="btn btn-sm" id="copy-contact-btn">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-gold" id="add-result-done">Done</button>
+                </div>
             </div>
         </div>
     </div>
