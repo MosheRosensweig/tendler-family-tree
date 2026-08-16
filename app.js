@@ -13,7 +13,7 @@ const BIRTHDAYS_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${CONTACTS_
 
 // Google Apps Script Web App URL — set this after deploying the script
 // See google_apps_script.js for setup instructions
-const APPS_SCRIPT_URL = '';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRHl85JPhc9DX9jAnpnEJbb5WibsFEmKSMfqSYgqlRlLZiYk8ww4CAnvXVZOEKQnBykA/exec';
 
 let parsedContacts = [];
 let parsedBirthdays = [];
