@@ -2236,18 +2236,53 @@ main#tree-container {
         background: #ffffff !important;
         color: #000000 !important;
         border: 1px solid #000000 !important;
+        font-weight: 600 !important;
+    }
+
+    /* B&W Distinct Styling per Category */
+    body.print-theme-bw .cal-badge-hebrew-bday {
+        background: #f1f5f9 !important; /* Soft light gray fill */
+        color: #000000 !important;
+        border: 1px solid #334155 !important;
+        font-family: 'David Libre', serif !important;
         font-weight: 700 !important;
     }
 
-    body.print-theme-bw .cal-badge-hebrew-bday,
-    body.print-theme-bw .cal-badge-english-bday,
-    body.print-theme-bw .cal-badge-jewish-holiday,
-    body.print-theme-bw .cal-badge-us-holiday,
-    body.print-theme-bw .cal-badge-israel-holiday,
+    body.print-theme-bw .cal-badge-english-bday {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #64748b !important;
+        font-family: -apple-system, sans-serif !important;
+        font-weight: 600 !important;
+    }
+
+    body.print-theme-bw .cal-badge-jewish-holiday {
+        background: #000000 !important; /* Inverted solid black chip */
+        color: #ffffff !important;
+        border: 1px solid #000000 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em !important;
+    }
+
+    body.print-theme-bw .cal-badge-us-holiday {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1.5px dashed #000000 !important; /* Distinct dashed outline */
+        font-weight: 700 !important;
+    }
+
+    body.print-theme-bw .cal-badge-israel-holiday {
+        background: #e2e8f0 !important; /* Light slate fill */
+        color: #000000 !important;
+        border: 1.5px solid #000000 !important;
+        font-weight: 800 !important;
+    }
+
     body.print-theme-bw .cal-badge-rosh-chodesh {
         background: #ffffff !important;
         color: #000000 !important;
-        border: 1px solid #000000 !important;
+        border: 1px dotted #000000 !important; /* Distinct dotted outline */
+        font-weight: 700 !important;
     }
 
     /* ============================================

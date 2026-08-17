@@ -1742,12 +1742,12 @@ function renderCalendarEngine() {
             <div class="calendar-month-header">
                 <div class="cal-month-title">${monthNames[mIdx]} ${targetYear}</div>
                 <div class="cal-month-legend-inline">
-                    <span class="cal-event-tag cal-badge-hebrew-bday">Hebrew Birthday</span>
-                    <span class="cal-event-tag cal-badge-english-bday">English Birthday</span>
-                    <span class="cal-event-tag cal-badge-jewish-holiday">Jewish Holiday</span>
-                    <span class="cal-event-tag cal-badge-us-holiday">US Holiday</span>
-                    <span class="cal-event-tag cal-badge-israel-holiday">Israel Holiday</span>
-                    <span class="cal-event-tag cal-badge-rosh-chodesh">Rosh Chodesh</span>
+                    <span class="cal-event-tag cal-badge-hebrew-bday">📜 Hebrew Birthday</span>
+                    <span class="cal-event-tag cal-badge-english-bday">🎂 English Birthday</span>
+                    <span class="cal-event-tag cal-badge-jewish-holiday">✡️ Jewish Holiday</span>
+                    <span class="cal-event-tag cal-badge-us-holiday">🇺🇸 US Holiday</span>
+                    <span class="cal-event-tag cal-badge-israel-holiday">🇮🇱 Israel Holiday</span>
+                    <span class="cal-event-tag cal-badge-rosh-chodesh">🌿 Rosh Chodesh</span>
                 </div>
                 <div class="cal-hebrew-month-subtitle">${hebrewMonthRange}</div>
             </div>
@@ -1798,7 +1798,7 @@ function renderCalendarEngine() {
             // 1. Rosh Chodesh
             if (hDate.day === 1 || hDate.day === 30) {
                 events.push({
-                    text: hDate.day === 1 ? `ר״ח ${hDate.monthHe}` : 'ר״ח',
+                    text: hDate.day === 1 ? `🌿 ר״ח ${hDate.monthHe}` : '🌿 ר״ח',
                     type: 'rosh-chodesh',
                     badgeClass: 'cal-badge-rosh-chodesh'
                 });
@@ -1808,7 +1808,7 @@ function renderCalendarEngine() {
             JEWISH_HOLIDAYS_FIXED_HEBREW.forEach(jh => {
                 if (matchesHebrewHoliday(jh, hDate)) {
                     events.push({
-                        text: jh.name,
+                        text: jh.type === 'israel' ? `🇮🇱 ${jh.name}` : `✡️ ${jh.name}`,
                         type: jh.type,
                         badgeClass: jh.type === 'israel' ? 'cal-badge-israel-holiday' : 'cal-badge-jewish-holiday'
                     });
@@ -1819,7 +1819,7 @@ function renderCalendarEngine() {
             usHolidays.forEach(uh => {
                 if (uh.monthIdx === mIdx && uh.day === currentDay) {
                     events.push({
-                        text: uh.name,
+                        text: `🇺🇸 ${uh.name}`,
                         type: 'us',
                         badgeClass: 'cal-badge-us-holiday'
                     });
