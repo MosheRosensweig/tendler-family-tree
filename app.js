@@ -1933,7 +1933,7 @@ function setupCalendarModal() {
 
     if (!btn || !modal) return;
 
-    // Populate Year Select Options: [Current - 1, Current, Current + 1, Current + 2]
+    // Populate Year Select Options
     const curYear = new Date().getFullYear();
     yearSelect.innerHTML = `
         <option value="${curYear - 1}">${curYear - 1}</option>
@@ -1943,10 +1943,12 @@ function setupCalendarModal() {
     `;
     monthSelect.value = new Date().getMonth();
 
-    const openCalendar = async () => {
+    const openCalendar = async (e) => {
+        if (e) e.preventDefault();
         calendarState.year = parseInt(yearSelect.value, 10) || curYear;
         calendarState.monthIdx = parseInt(monthSelect.value, 10) || 0;
         calendarState.viewMode = viewSelect.value || 'year';
+        
         // Ensure birthdays are loaded before rendering the calendar
         if (!parsedBirthdays || parsedBirthdays.length === 0) {
             await loadBirthdays();
@@ -1959,10 +1961,22 @@ function setupCalendarModal() {
         modal.style.display = 'none';
     };
 
+    // --- Mobile & Desktop Event Binding ---
     btn.addEventListener('click', openCalendar);
-    if (overlay) overlay.addEventListener('click', hideCalendar);
-    if (closeBtn) closeBtn.addEventListener('click', hideCalendar);
-    if (dismissBtn) dismissBtn.addEventListener('click', hideCalendar);
+    btn.addEventListener('touchend', openCalendar, { passive: false });
+
+    if (overlay) {
+        overlay.addEventListener('click', hideCalendar);
+        overlay.addEventListener('touchend', (e) => { e.preventDefault(); hideCalendar(); }, { passive: false });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideCalendar);
+        closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); hideCalendar(); }, { passive: false });
+    }
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', hideCalendar);
+        dismissBtn.addEventListener('touchend', (e) => { e.preventDefault(); hideCalendar(); }, { passive: false });
+    }
 
     if (contentArea) {
         contentArea.addEventListener('scroll', () => {
@@ -2016,13 +2030,12 @@ function setupCalendarModal() {
         });
     }
 
-    // Print / Landscape PDF Action with selectable print themes
+    // Print / Landscape PDF Action
     const printThemeSelect = document.getElementById('cal-print-theme-select');
     if (printBtn) {
         printBtn.addEventListener('click', () => {
             const selectedTheme = printThemeSelect ? printThemeSelect.value : 'light';
             
-            // Clean up any existing print theme classes
             document.body.classList.remove('print-theme-bw', 'print-theme-dark');
             if (selectedTheme === 'bw') {
                 document.body.classList.add('print-theme-bw');
@@ -2032,7 +2045,6 @@ function setupCalendarModal() {
 
             window.print();
 
-            // Clean up after print dialog closes
             setTimeout(() => {
                 document.body.classList.remove('print-theme-bw', 'print-theme-dark');
             }, 1000);
