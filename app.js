@@ -2173,7 +2173,10 @@ function showContactModal(contact, nodeDisplayName) {
     subtitleEl.textContent = `Contact Info for ${nodeDisplayName || contact.last}`;
 
     // Find birthday info for this contact/person
-    const bdayMatch = findBirthdayForPerson(nodeDisplayName || (contact.first + ' ' + contact.last), contact);
+    const bdayMatch = findBirthdayForPerson(
+        nodeDisplayName || `${contact.first} ${contact.last}`,
+        [contact.last]
+    );
     if (bdayMatch && bdayMatch.englishRaw) {
         bdayText.textContent = bdayMatch.englishRaw;
         if (bdayContainer) bdayContainer.style.display = 'flex';
