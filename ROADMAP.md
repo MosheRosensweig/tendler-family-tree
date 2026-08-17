@@ -26,7 +26,31 @@ The next phase expands the platform beyond an interactive tree into an **automat
 
 ---
 
-## 📅 Roadmap Breakdown: Dynamic Printable Calendar System
+## 🚀 Step-by-Step Implementation Sequence
+
+```mermaid
+graph TD
+    A[Step 1: Build Full Year Printable Calendar] --> B[Step 2: Single Month View & Email Template]
+    B --> C[Step 3: Auto-Generate & Drive Cache PDF]
+    C --> D[Step 4: Scheduled Automated Broadcasts]
+    D --> E[Step 5: 1-Click Unsubscribe & Preference Flow]
+    E --> F[Step 6: Annual Auto-Theme Rotation Engine]
+```
+
+| Phase | Milestone | Focus | Deliverable | Status |
+|---|---|---|---|---|
+| **Phase 1** | **Core Tree & Live Modals** | Frontend | Interactive tree, search, contact cards, 7-day upcoming popup, inline birthday cakes | ✅ Complete |
+| **Phase 2** | **Backend Read/Write Integration** | Google Apps Script | Apps Script Web App, Google Doc bullet sync, dynamic sheet row insertion | ✅ Complete |
+| **Phase 3.1** | **[1] Full-Year Calendar Engine** | Engine / PDF | Printable 12-month dual Gregorian/Hebrew grid with all birthdays and 3-tier holidays | 🟡 **Starting Now** |
+| **Phase 3.2** | **[2] Monthly Page & Email Version** | Web & Email HTML | Interactive single-month web viewer + responsive table-based email template | ⏳ Next |
+| **Phase 3.3** | **[3] Auto-Generate & Cache** | Backend / Drive | Apps Script background PDF generation & Google Drive caching | ⏳ Next |
+| **Phase 3.4** | **[4] Automated Delivery (Jan 1 / Rosh)** | Scheduled Triggers | Master annual calendar broadcast & weekly birthday digest | ⏳ Next |
+| **Phase 4** | **1-Click Unsubscribe & Self-Service** | Backend / Endpoints | Footer 1-click `Yes`→`No` toggle & disclaimer links | ⏳ Scheduled |
+| **Phase 5** | **Annual Theme Rotation Engine** | Design System | 10 pre-approved designer palettes auto-cycling annually | ⏳ Final Phase |
+
+---
+
+## 📅 Roadmap Breakdown: Detailed Task Specifications
 
 ### Task 1: Generate Full-Year Printable Calendar (Top Priority)
 > **Goal**: Build the core rendering engine that compiles all family birthdays, Jewish holidays, and secular holidays into a high-resolution, print-ready 12-month calendar (PDF / Print layout).
@@ -102,27 +126,3 @@ The next phase expands the platform beyond an interactive tree into an **automat
 - [ ] **Curated Theme Presets**: ~10 pre-approved luxury color palettes and typographic styles.
 - [ ] **Synchronized Web & PDF Styling**: The calendar engine inherits color tokens directly from the active annual theme.
 - [ ] **Automated Annual Switcher**: Rotates on schedule (e.g. annually on Rosh Hashana / Jan 1st) with admin manual override.
-
----
-
-## 🚀 Step-by-Step Implementation Sequence
-
-```mermaid
-graph TD
-    A[Step 1: Build Full Year Calendar Engine] --> B[Step 2: Single Month View & Email Template]
-    B --> C[Step 3: Auto-Generate & Drive Cache PDF]
-    C --> D[Step 4: Scheduled Automated Broadcasts]
-    D --> E[Step 5: 1-Click Unsubscribe & Preference Flow]
-    E --> F[Step 6: Annual Auto-Theme Rotation Engine]
-```
-
-| Phase | Milestone | Focus | Deliverable | Status |
-|---|---|---|---|---|
-| **Phase 1** | **Core Tree & Live Modals** | Frontend | Interactive tree, search, contact cards, 7-day upcoming popup, inline birthday cakes | ✅ Complete |
-| **Phase 2** | **Backend Read/Write Integration** | Google Apps Script | Apps Script Web App, Google Doc bullet sync, dynamic sheet row insertion | ✅ Complete |
-| **Phase 3.1** | **[1] Full-Year Calendar Engine** | Engine / PDF | Printable 12-month dual Gregorian/Hebrew grid with all birthdays and 3-tier holidays | 🟡 **Starting Now** |
-| **Phase 3.2** | **[2] Monthly Page & Email Version** | Web & Email HTML | Interactive single-month web viewer + responsive table-based email template | ⏳ Next |
-| **Phase 3.3** | **[3] Auto-Generate & Cache** | Backend / Drive | Apps Script background PDF generation & Google Drive caching | ⏳ Next |
-| **Phase 3.4** | **[4] Automated Delivery (Jan 1 / Rosh)** | Scheduled Triggers | Master annual calendar broadcast & weekly birthday digest | ⏳ Next |
-| **Phase 4** | **1-Click Unsubscribe & Self-Service** | Backend / Endpoints | Footer 1-click `Yes`→`No` toggle & disclaimer links | ⏳ Scheduled |
-| **Phase 5** | **Annual Theme Rotation Engine** | Design System | 10 pre-approved designer palettes auto-cycling annually | ⏳ Final Phase |
