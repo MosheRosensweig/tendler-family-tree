@@ -1813,8 +1813,9 @@ main#tree-container {
 }
 
 .cal-hebrew-month-subtitle {
-    font-size: 1rem;
-    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold-300);
     direction: rtl;
     font-family: 'Assistant', 'Heebo', sans-serif;
 }
@@ -2048,9 +2049,9 @@ main#tree-container {
     }
 
     .cal-hebrew-month-subtitle {
-        color: #78350f !important; /* Deep warm bronze / gold */
-        font-size: 1.15rem !important;
-        font-weight: 700 !important;
+        color: #b45309 !important; /* Matching warm gold */
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
         white-space: nowrap !important;
         text-align: right !important;
         direction: rtl !important;
