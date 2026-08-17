@@ -1828,16 +1828,23 @@ function renderCalendarEngine() {
 
             // 4. Family Birthdays (Hebrew & English)
             (parsedBirthdays || []).forEach(b => {
-                // English Birthday match
-                if (matchesEnglishDate(b.englishParsed, thisDate)) {
+                const isEng = matchesEnglishDate(b.englishParsed, thisDate);
+                const isHeb = matchesHebrewDate(b.hebrewParsed, hDate);
+
+                if (isEng && isHeb) {
+                    // Both on the same day: merge into one tag with both emojis and split half/half color
+                    events.push({
+                        text: `🎈🎂 ${b.first} ${b.last}`,
+                        type: 'dual-bday',
+                        badgeClass: 'cal-badge-dual-bday'
+                    });
+                } else if (isEng) {
                     events.push({
                         text: `🎂 ${b.first} ${b.last}`,
                         type: 'english-bday',
                         badgeClass: 'cal-badge-english-bday'
                     });
-                }
-                // Hebrew Birthday match (Balloon icon 🎈)
-                if (matchesHebrewDate(b.hebrewParsed, hDate)) {
+                } else if (isHeb) {
                     events.push({
                         text: `🎈 ${b.first} ${b.last}`,
                         type: 'hebrew-bday',

@@ -1773,7 +1773,6 @@ main#tree-container {
     display: inline-block;
 }
 
-/* Swatch Colors */
 .cal-badge-hebrew-bday {
     background: #d97706; /* Warm Amber / Gold */
     color: #fff;
@@ -1782,6 +1781,13 @@ main#tree-container {
 .cal-badge-english-bday {
     background: #0284c7; /* Sky Blue */
     color: #fff;
+}
+
+/* Dual Birthday (Same-day Hebrew & English) - Half Amber, Half Sky Blue */
+.cal-badge-dual-bday {
+    background: linear-gradient(135deg, #d97706 0%, #d97706 50%, #0284c7 50%, #0284c7 100%);
+    color: #fff;
+    font-weight: 700;
 }
 
 .cal-badge-jewish-holiday {
@@ -2175,6 +2181,12 @@ main#tree-container {
         color: #ffffff !important;
     }
 
+    /* Print Dual Birthday - Half Amber, Half Sky Blue */
+    .cal-badge-dual-bday {
+        background: linear-gradient(135deg, #d97706 0%, #d97706 50%, #0284c7 50%, #0284c7 100%) !important;
+        color: #ffffff !important;
+    }
+
     .cal-badge-jewish-holiday {
         background: #7c3aed !important;
         color: #ffffff !important;
@@ -2255,6 +2267,13 @@ main#tree-container {
         border: 1px solid #64748b !important;
         font-family: -apple-system, sans-serif !important;
         font-weight: 600 !important;
+    }
+
+    body.print-theme-bw .cal-badge-dual-bday {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important; /* Prominent solid border for same-day dual birthdays */
+        font-weight: 700 !important;
     }
 
     body.print-theme-bw .cal-badge-jewish-holiday {
