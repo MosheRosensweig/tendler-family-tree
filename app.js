@@ -1721,6 +1721,8 @@ function renderCalendarEngine() {
     monthsToRender.forEach(mIdx => {
         const monthSheet = document.createElement('div');
         monthSheet.className = 'calendar-month-sheet';
+        monthSheet.dataset.monthIdx = mIdx;
+        monthSheet.dataset.monthName = `${monthNames[mIdx]} ${targetYear}`;
 
         const firstDate = new Date(targetYear, mIdx, 1);
         const lastDate = new Date(targetYear, mIdx + 1, 0);
@@ -1733,6 +1735,8 @@ function renderCalendarEngine() {
         const hebrewMonthRange = firstHDate.monthHe === lastHDate.monthHe
             ? `${firstHDate.monthHe} ${firstHDate.year}`
             : `${firstHDate.monthHe} – ${lastHDate.monthHe} ${firstHDate.year}`;
+
+        monthSheet.dataset.hebrewRange = hebrewMonthRange;
 
         monthSheet.innerHTML = `
             <div class="calendar-month-header">
@@ -1872,6 +1876,37 @@ function renderCalendarEngine() {
 
         container.appendChild(monthSheet);
     });
+
+    // Update sticky header to match first rendered month
+    updateStickyMonthHeader();
+}
+
+function updateStickyMonthHeader() {
+    const container = document.getElementById('calendar-content-area');
+    const leftTitleEl = document.getElementById('cal-sticky-left-title');
+    const rightTitleEl = document.getElementById('cal-sticky-right-title');
+    if (!container || !leftTitleEl || !rightTitleEl) return;
+
+    const sheets = container.querySelectorAll('.calendar-month-sheet');
+    if (!sheets || sheets.length === 0) return;
+
+    // Find the sheet currently most visible near top of scroll
+    const containerTop = container.getBoundingClientRect().top;
+    let activeSheet = sheets[0];
+
+    for (let i = 0; i < sheets.length; i++) {
+        const rect = sheets[i].getBoundingClientRect();
+        // If bottom of sheet is more than 80px below container top, this is our active sheet
+        if (rect.bottom - containerTop > 80) {
+            activeSheet = sheets[i];
+            break;
+        }
+    }
+
+    if (activeSheet) {
+        leftTitleEl.textContent = activeSheet.dataset.monthName || '';
+        rightTitleEl.textContent = activeSheet.dataset.hebrewRange || '';
+    }
 }
 
 function setupCalendarModal() {
@@ -1887,6 +1922,7 @@ function setupCalendarModal() {
     const prevMonthBtn = document.getElementById('cal-prev-month');
     const nextMonthBtn = document.getElementById('cal-next-month');
     const printBtn = document.getElementById('cal-print-btn');
+    const contentArea = document.getElementById('calendar-content-area');
 
     if (!btn || !modal) return;
 
@@ -1916,6 +1952,12 @@ function setupCalendarModal() {
     if (overlay) overlay.addEventListener('click', hideCalendar);
     if (closeBtn) closeBtn.addEventListener('click', hideCalendar);
     if (dismissBtn) dismissBtn.addEventListener('click', hideCalendar);
+
+    if (contentArea) {
+        contentArea.addEventListener('scroll', () => {
+            updateStickyMonthHeader();
+        });
+    }
 
     yearSelect.addEventListener('change', () => {
         calendarState.year = parseInt(yearSelect.value, 10);

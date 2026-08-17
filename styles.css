@@ -1717,18 +1717,46 @@ main#tree-container {
     font-size: 0.88rem;
 }
 
-/* Legend Bar */
+/* Frozen Master Bar (English Month, Legend Chips, Hebrew Month) */
 .calendar-legend-bar {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1.1rem;
-    padding: 0.65rem 0.85rem;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-subtle);
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-medium);
     border-radius: var(--radius-sm);
-    margin: 0.85rem 0;
-    font-size: 0.8rem;
+    margin: 0.85rem 0 0.5rem;
+}
+
+.cal-sticky-month-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gold-300);
+    white-space: nowrap;
+    min-width: 170px;
+}
+
+.cal-legend-chips-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    flex: 1;
+}
+
+.cal-sticky-hebrew-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold-300);
+    direction: rtl;
+    font-family: 'Assistant', 'Heebo', sans-serif;
+    white-space: nowrap;
+    min-width: 170px;
+    text-align: right;
 }
 
 .cal-legend-item {
@@ -1782,7 +1810,7 @@ main#tree-container {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 2rem;
     padding-right: 0.35rem;
 }
 
@@ -1796,28 +1824,9 @@ main#tree-container {
     break-after: page;
 }
 
+/* In WEB view, month title is in the frozen top bar, so hide duplicate inner sheet header */
 .calendar-month-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 0.85rem;
-    padding-bottom: 0.45rem;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.cal-month-title {
-    font-family: var(--font-heading);
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--gold-300);
-}
-
-.cal-hebrew-month-subtitle {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--gold-300);
-    direction: rtl;
-    font-family: 'Assistant', 'Heebo', sans-serif;
+    display: none;
 }
 
 /* Month Grid */
