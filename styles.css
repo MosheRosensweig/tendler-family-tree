@@ -2021,35 +2021,36 @@ main#tree-container {
         border-bottom: 2px solid #0f172a !important;
         padding-bottom: 0.25rem !important;
         margin-bottom: 0.35rem !important;
+        gap: 1rem !important;
     }
 
     .cal-month-title {
         color: #0f172a !important;
-        font-size: 1.4rem !important;
+        font-size: 1.35rem !important;
         font-weight: 800 !important;
+        white-space: nowrap !important;
+    }
+
+    .cal-month-legend-inline {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 0.45rem !important;
+        font-size: 0.7rem !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        flex: 1 !important;
+        text-align: center !important;
     }
 
     .cal-hebrew-month-subtitle {
         color: #334155 !important;
         font-size: 1.1rem !important;
         font-weight: 700 !important;
-    }
-
-    .cal-month-legend-inline {
-        display: flex !important;
-        align-items: center !important;
-        flex-wrap: wrap !important;
-        gap: 0.6rem !important;
-        font-size: 0.72rem !important;
-        color: #1e293b !important;
-        font-weight: 600 !important;
-    }
-
-    .cal-legend-swatch {
-        width: 10px !important;
-        height: 10px !important;
-        border-radius: 2px !important;
-        display: inline-block !important;
+        white-space: nowrap !important;
+        text-align: right !important;
+        direction: rtl !important;
     }
 
     /* Grid Table strictly formatted to fit 1 page */

@@ -1658,10 +1658,7 @@ function renderCalendarEngine() {
 
         monthSheet.innerHTML = `
             <div class="calendar-month-header">
-                <div class="cal-month-title-group">
-                    <div class="cal-month-title">${monthNames[mIdx]} ${targetYear}</div>
-                    <div class="cal-hebrew-month-subtitle">${hebrewMonthRange}</div>
-                </div>
+                <div class="cal-month-title">${monthNames[mIdx]} ${targetYear}</div>
                 <div class="cal-month-legend-inline">
                     <span class="cal-event-tag cal-badge-hebrew-bday">Hebrew Birthday</span>
                     <span class="cal-event-tag cal-badge-english-bday">English Birthday</span>
@@ -1670,6 +1667,7 @@ function renderCalendarEngine() {
                     <span class="cal-event-tag cal-badge-israel-holiday">Israel Holiday</span>
                     <span class="cal-event-tag cal-badge-rosh-chodesh">Rosh Chodesh</span>
                 </div>
+                <div class="cal-hebrew-month-subtitle">${hebrewMonthRange}</div>
             </div>
             <table class="calendar-grid-table">
                 <thead>
