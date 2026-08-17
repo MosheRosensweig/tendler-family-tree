@@ -1170,6 +1170,80 @@ function parseEnglishBirthdayString(raw) {
     };
 }
 
+function formatHebrewYear(numYear) {
+    const y = parseInt(numYear, 10);
+    if (isNaN(y)) return numYear || '';
+
+    // Standard 5000s conversion: e.g. 5786 -> 786 -> תשפ״ו
+    let rem = y % 1000;
+    let str = '';
+
+    const hundreds = [
+        { v: 400, l: 'ת' },
+        { v: 300, l: 'ש' },
+        { v: 200, l: 'ר' },
+        { v: 100, l: 'ק' }
+    ];
+    for (const h of hundreds) {
+        while (rem >= h.v) {
+            str += h.l;
+            rem -= h.v;
+        }
+    }
+
+    const tens = [
+        { v: 90, l: 'צ' },
+        { v: 80, l: 'פ' },
+        { v: 70, l: 'ע' },
+        { v: 60, l: 'ס' },
+        { v: 50, l: 'נ' },
+        { v: 40, l: 'מ' },
+        { v: 30, l: 'ל' },
+        { v: 20, l: 'כ' },
+        { v: 10, l: 'י' }
+    ];
+
+    // Handle special 15 (ט״ו) and 16 (ט״ז)
+    if (rem === 15) {
+        str += 'טו';
+        rem = 0;
+    } else if (rem === 16) {
+        str += 'טז';
+        rem = 0;
+    } else {
+        for (const t of tens) {
+            if (rem >= t.v) {
+                str += t.l;
+                rem -= t.v;
+                break;
+            }
+        }
+    }
+
+    const units = [
+        { v: 9, l: 'ט' },
+        { v: 8, l: 'ח' },
+        { v: 7, l: 'ז' },
+        { v: 6, l: 'ו' },
+        { v: 5, l: 'ה' },
+        { v: 4, l: 'ד' },
+        { v: 3, l: 'ג' },
+        { v: 2, l: 'ב' },
+        { v: 1, l: 'א' }
+    ];
+    for (const u of units) {
+        if (rem >= u.v) {
+            str += u.l;
+            rem -= u.v;
+            break;
+        }
+    }
+
+    if (str.length === 1) return `${str}׳`;
+    if (str.length > 1) return `${str.slice(0, -1)}״${str.slice(-1)}`;
+    return numYear.toString();
+}
+
 function getHebrewDateInfo(date) {
     const parts = new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(date);
     const partsHe = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(date);
@@ -1178,11 +1252,15 @@ function getHebrewDateInfo(date) {
     const dayPart = parts.find(p => p.type === 'day');
     const yearPart = parts.find(p => p.type === 'year');
     const monthHePart = partsHe.find(p => p.type === 'month');
+    const yearHePart = partsHe.find(p => p.type === 'year');
+
+    const numYear = yearPart ? yearPart.value.replace(/[^0-9]/g, '') : '';
+    const formattedHeYear = numYear ? formatHebrewYear(numYear) : (yearHePart ? yearHePart.value : '');
 
     return {
         month: monthPart ? monthPart.value : '',
         day: dayPart ? parseInt(dayPart.value, 10) : 1,
-        year: yearPart ? yearPart.value : '',
+        year: formattedHeYear,
         monthHe: monthHePart ? monthHePart.value : ''
     };
 }
