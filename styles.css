@@ -1915,31 +1915,15 @@ main#tree-container {
     color: var(--text-secondary);
 }
 
-/* ============================================
-   HIGH-RES PRINT STYLES FOR LANDSCAPE PDF
-   ============================================ */
-
-@media print {
-    /* Hide everything on the page except the calendar modal */
-    body > *:not(#calendar-modal) {
-        display: none !important;
-    }
-
-    body {
-        background: #ffffff !important;
-        color: #000000 !important;
-        font-family: Arial, Helvetica, sans-serif !important;
-    }
-
 .cal-month-title-group {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
 }
 
-/* Hide month inline legend on web (web uses top master legend bar) */
+/* Strictly hide individual month inline legend in WEB view (web uses frozen master top legend bar) */
 .cal-month-legend-inline {
-    display: none;
+    display: none !important;
 }
 
 /* ============================================
