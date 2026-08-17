@@ -1931,6 +1931,47 @@ main#tree-container {
         font-family: Arial, Helvetica, sans-serif !important;
     }
 
+.cal-month-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.cal-month-legend-inline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.cal-inline-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ============================================
+   HIGH-RES PRINT STYLES FOR LANDSCAPE PDF
+   ============================================ */
+
+@media print {
+    /* Hide everything on the page except the calendar modal */
+    body > *:not(#calendar-modal) {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
     #calendar-modal {
         display: block !important;
         position: static !important;
@@ -1941,8 +1982,11 @@ main#tree-container {
         height: auto !important;
     }
 
+    /* Hide modal outer wrapper chrome during print */
     .contact-modal-overlay,
     .contact-modal-close,
+    .calendar-modal-header,
+    .calendar-legend-bar,
     .calendar-header-controls,
     .contact-modal-footer,
     #calendar-modal-dismiss {
@@ -1958,36 +2002,35 @@ main#tree-container {
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
+        max-height: none !important;
     }
 
-    .calendar-modal-header {
-        border-bottom: 2px solid #0f172a !important;
-        padding-bottom: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
+    .calendar-modal-body {
+        overflow: visible !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        gap: 0 !important;
     }
 
-    #calendar-modal-title {
-        color: #0f172a !important;
-        font-size: 1.5rem !important;
-    }
-
-    .calendar-legend-bar {
-        background: #f8fafc !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #334155 !important;
-        margin: 0.4rem 0 0.8rem !important;
-        padding: 0.35rem 0.5rem !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
+    /* Each monthly sheet is exactly one landscape page */
     .calendar-month-sheet {
         background: #ffffff !important;
-        border: 1px solid #94a3b8 !important;
-        padding: 0.5rem !important;
-        margin-bottom: 0 !important;
+        border: 1.5px solid #0f172a !important;
+        border-radius: 4px !important;
+        padding: 0.4in 0.45in !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         page-break-after: always !important;
         break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -1997,40 +2040,119 @@ main#tree-container {
         break-after: avoid !important;
     }
 
+    .calendar-month-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border-bottom: 2px solid #0f172a !important;
+        padding-bottom: 0.25rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
     .cal-month-title {
         color: #0f172a !important;
-        font-size: 1.25rem !important;
+        font-size: 1.4rem !important;
+        font-weight: 800 !important;
     }
 
     .cal-hebrew-month-subtitle {
-        color: #475569 !important;
-        font-size: 0.95rem !important;
+        color: #334155 !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+    }
+
+    .cal-month-legend-inline {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 0.6rem !important;
+        font-size: 0.72rem !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+
+    .cal-legend-swatch {
+        width: 10px !important;
+        height: 10px !important;
+        border-radius: 2px !important;
+        display: inline-block !important;
+    }
+
+    /* Grid Table strictly formatted to fit 1 page */
+    .calendar-grid-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        flex: 1 !important;
     }
 
     .calendar-grid-table th {
         background: #0f172a !important;
         color: #ffffff !important;
-        border: 1px solid #64748b !important;
+        border: 1px solid #0f172a !important;
+        padding: 0.25rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        text-align: center !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
     .calendar-grid-table td {
         background: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        height: 110px !important;
+        border: 1px solid #94a3b8 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0.2rem 0.25rem !important;
+        vertical-align: top !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
+    .calendar-grid-table td.cal-other-month {
+        background: #f8fafc !important;
+        opacity: 0.5 !important;
+    }
+
+    .cal-day-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: baseline !important;
+        margin-bottom: 0.15rem !important;
+    }
+
     .cal-secular-date {
         color: #0f172a !important;
+        font-size: 0.85rem !important;
+        font-weight: 800 !important;
     }
 
     .cal-hebrew-date {
         color: #334155 !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
     }
 
+    .cal-events-container {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.12rem !important;
+    }
+
+    .cal-event-tag {
+        font-size: 0.68rem !important;
+        line-height: 1.2 !important;
+        padding: 0.08rem 0.22rem !important;
+        border-radius: 2px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Print Badge Colors */
     .cal-badge-hebrew-bday {
         background: #d97706 !important;
         color: #ffffff !important;
@@ -2063,7 +2185,7 @@ main#tree-container {
 
     @page {
         size: landscape;
-        margin: 0.5in;
+        margin: 0.35in;
     }
 }
 
