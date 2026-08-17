@@ -1943,10 +1943,14 @@ function setupCalendarModal() {
     `;
     monthSelect.value = new Date().getMonth();
 
-    const openCalendar = () => {
+    const openCalendar = async () => {
         calendarState.year = parseInt(yearSelect.value, 10) || curYear;
         calendarState.monthIdx = parseInt(monthSelect.value, 10) || 0;
         calendarState.viewMode = viewSelect.value || 'year';
+        // Ensure birthdays are loaded before rendering the calendar
+        if (!parsedBirthdays || parsedBirthdays.length === 0) {
+            await loadBirthdays();
+        }
         renderCalendarEngine();
         modal.style.display = 'flex';
     };
