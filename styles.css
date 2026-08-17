@@ -2058,13 +2058,14 @@ main#tree-container {
     }
 
     .cal-hebrew-month-subtitle {
-        color: #b45309 !important; /* Matching warm gold */
-        font-size: 1.2rem !important;
+        color: #0f172a !important; /* Deep black/navy matching English title */
+        font-size: 1.45rem !important;
         font-weight: 800 !important;
+        letter-spacing: 0.03em !important;
         white-space: nowrap !important;
         text-align: right !important;
         direction: rtl !important;
-        font-family: 'Assistant', 'Heebo', 'David Libre', serif !important;
+        font-family: 'David Libre', 'Frank Ruhl Libre', 'Assistant', Georgia, serif !important;
     }
 
     /* Grid Table strictly formatted to fit 1 page with equal cell distribution */
