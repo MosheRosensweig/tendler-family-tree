@@ -1941,6 +1941,41 @@ main#tree-container {
 }
 
 /* ============================================
+   MOBILE CALENDAR MESSAGE
+   ============================================ */
+
+.calendar-mobile-message {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .calendar-mobile-message {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem 1rem;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border-medium);
+        border-radius: var(--radius-sm);
+        margin: 1rem 0;
+    }
+
+    .calendar-mobile-message p {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .calendar-legend-bar,
+    .calendar-modal-body,
+    .calendar-modal-footer {
+        display: none !important;
+    }
+}
+
+/* ============================================
    HIGH-RES PRINT STYLES FOR LANDSCAPE PDF
    ============================================ */
 
@@ -1976,6 +2011,7 @@ main#tree-container {
     .calendar-modal-header,
     .calendar-legend-bar,
     .calendar-header-controls,
+    .calendar-mobile-message,
     .contact-modal-footer,
     #calendar-modal-dismiss {
         display: none !important;
