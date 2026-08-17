@@ -1905,7 +1905,6 @@ main#tree-container {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    overflow: hidden;
 }
 
 .cal-event-tag {
@@ -1913,9 +1912,8 @@ main#tree-container {
     line-height: 1.25;
     padding: 0.12rem 0.3rem;
     border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
     display: block;
 }
 
@@ -2359,4 +2357,3 @@ main#tree-container {
         margin: 0.3in;
     }
 }
-
