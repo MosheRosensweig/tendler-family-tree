@@ -1933,23 +1933,13 @@ main#tree-container {
 
 .cal-month-title-group {
     display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
+/* Hide month inline legend on web (web uses top master legend bar) */
 .cal-month-legend-inline {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-
-.cal-inline-legend-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
+    display: none;
 }
 
 /* ============================================

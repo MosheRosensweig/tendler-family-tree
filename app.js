@@ -1645,12 +1645,12 @@ function renderCalendarEngine() {
                     <div class="cal-hebrew-month-subtitle">${hebrewMonthRange}</div>
                 </div>
                 <div class="cal-month-legend-inline">
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-hebrew-bday"></span> Hebrew Birthday</span>
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-english-bday"></span> English Birthday</span>
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-jewish-holiday"></span> Jewish Holiday</span>
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-us-holiday"></span> US Holiday</span>
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-israel-holiday"></span> Israel Holiday</span>
-                    <span class="cal-inline-legend-item"><span class="cal-legend-swatch cal-badge-rosh-chodesh"></span> Rosh Chodesh</span>
+                    <span class="cal-event-tag cal-badge-hebrew-bday">Hebrew Birthday</span>
+                    <span class="cal-event-tag cal-badge-english-bday">English Birthday</span>
+                    <span class="cal-event-tag cal-badge-jewish-holiday">Jewish Holiday</span>
+                    <span class="cal-event-tag cal-badge-us-holiday">US Holiday</span>
+                    <span class="cal-event-tag cal-badge-israel-holiday">Israel Holiday</span>
+                    <span class="cal-event-tag cal-badge-rosh-chodesh">Rosh Chodesh</span>
                 </div>
             </div>
             <table class="calendar-grid-table">
