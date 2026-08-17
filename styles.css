@@ -2151,14 +2151,15 @@ main#tree-container {
     }
 
     .cal-event-tag {
-        font-size: 0.66rem !important;
-        line-height: 1.2 !important;
-        padding: 0.08rem 0.22rem !important;
+        font-size: 0.63rem !important;
+        line-height: 1.18 !important;
+        padding: 0.06rem 0.2rem !important;
         border-radius: 2px !important;
         font-weight: 600 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
