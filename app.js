@@ -1494,6 +1494,379 @@ function setupBirthdayPopup() {
     if (dismissBtn) dismissBtn.addEventListener('click', hide);
 }
 
+// ============================================
+// DYNAMIC FULL-YEAR & MONTHLY CALENDAR ENGINE
+// ============================================
+
+/**
+ * Standard Jewish, US, and Israeli holiday catalog with accurate date algorithms.
+ */
+const JEWISH_HOLIDAYS_FIXED_HEBREW = [
+    { month: 'Tishrei', day: 1, name: 'Rosh Hashana I', he: 'ראש השנה א׳', type: 'jewish' },
+    { month: 'Tishrei', day: 2, name: 'Rosh Hashana II', he: 'ראש השנה ב׳', type: 'jewish' },
+    { month: 'Tishrei', day: 3, name: 'Tzom Gedaliah', he: 'צום גדליה', type: 'jewish' },
+    { month: 'Tishrei', day: 10, name: 'Yom Kippur', he: 'יום כיפור', type: 'jewish' },
+    { month: 'Tishrei', day: 15, name: 'Sukkot I', he: 'סוכות א׳', type: 'jewish' },
+    { month: 'Tishrei', day: 16, name: 'Sukkot II', he: 'סוכות ב׳', type: 'jewish' },
+    { month: 'Tishrei', day: 17, name: 'Chol HaMoed Sukkot', he: 'חוה״מ סוכות', type: 'jewish' },
+    { month: 'Tishrei', day: 18, name: 'Chol HaMoed Sukkot', he: 'חוה״מ סוכות', type: 'jewish' },
+    { month: 'Tishrei', day: 19, name: 'Chol HaMoed Sukkot', he: 'חוה״מ סוכות', type: 'jewish' },
+    { month: 'Tishrei', day: 20, name: 'Chol HaMoed Sukkot', he: 'חוה״מ סוכות', type: 'jewish' },
+    { month: 'Tishrei', day: 21, name: 'Hoshana Rabba', he: 'הושענא רבה', type: 'jewish' },
+    { month: 'Tishrei', day: 22, name: 'Shemini Atzeret', he: 'שמיני עצרת', type: 'jewish' },
+    { month: 'Tishrei', day: 23, name: 'Simchat Torah', he: 'שמחת תורה', type: 'jewish' },
+    { month: 'Kislev', day: 25, name: 'Chanukah I', he: 'חנוכה א׳', type: 'jewish' },
+    { month: 'Kislev', day: 26, name: 'Chanukah II', he: 'חנוכה ב׳', type: 'jewish' },
+    { month: 'Kislev', day: 27, name: 'Chanukah III', he: 'חנוכה ג׳', type: 'jewish' },
+    { month: 'Kislev', day: 28, name: 'Chanukah IV', he: 'חנוכה ד׳', type: 'jewish' },
+    { month: 'Kislev', day: 29, name: 'Chanukah V', he: 'חנוכה ה׳', type: 'jewish' },
+    { month: 'Kislev', day: 30, name: 'Chanukah VI', he: 'חנוכה ו׳', type: 'jewish' },
+    { month: 'Tevet', day: 1, name: 'Chanukah VII', he: 'חנוכה ז׳', type: 'jewish' },
+    { month: 'Tevet', day: 2, name: 'Chanukah VIII', he: 'חנוכה ח׳', type: 'jewish' },
+    { month: 'Tevet', day: 10, name: 'Asara B\'Tevet (Fast)', he: 'עשרה בטבת', type: 'jewish' },
+    { month: 'Shevat', day: 15, name: 'Tu BiShvat', he: 'ט״ו בשבט', type: 'jewish' },
+    { month: 'Adar', day: 13, name: 'Ta\'anit Esther', he: 'תענית אסתר', type: 'jewish' },
+    { month: 'Adar', day: 14, name: 'Purim', he: 'פורים', type: 'jewish' },
+    { month: 'Adar', day: 15, name: 'Shushan Purim', he: 'שושן פורים', type: 'jewish' },
+    { month: 'Adar II', day: 13, name: 'Ta\'anit Esther', he: 'תענית אסתר', type: 'jewish' },
+    { month: 'Adar II', day: 14, name: 'Purim', he: 'פורים', type: 'jewish' },
+    { month: 'Adar II', day: 15, name: 'Shushan Purim', he: 'שושן פורים', type: 'jewish' },
+    { month: 'Nisan', day: 14, name: 'Erev Pesach', he: 'ערב פסח', type: 'jewish' },
+    { month: 'Nisan', day: 15, name: 'Pesach I', he: 'פסח א׳', type: 'jewish' },
+    { month: 'Nisan', day: 16, name: 'Pesach II', he: 'פסח ב׳', type: 'jewish' },
+    { month: 'Nisan', day: 17, name: 'Chol HaMoed Pesach', he: 'חוה״מ פסח', type: 'jewish' },
+    { month: 'Nisan', day: 18, name: 'Chol HaMoed Pesach', he: 'חוה״מ פסח', type: 'jewish' },
+    { month: 'Nisan', day: 19, name: 'Chol HaMoed Pesach', he: 'חוה״מ פסח', type: 'jewish' },
+    { month: 'Nisan', day: 20, name: 'Chol HaMoed Pesach', he: 'חוה״מ פסח', type: 'jewish' },
+    { month: 'Nisan', day: 21, name: 'Pesach VII', he: 'שביעי של פסח', type: 'jewish' },
+    { month: 'Nisan', day: 22, name: 'Pesach VIII', he: 'אחרון של פסח', type: 'jewish' },
+    { month: 'Nisan', day: 27, name: 'Yom HaShoah', he: 'יום השואה', type: 'jewish' },
+    { month: 'Iyyar', day: 4, name: 'Yom HaZikaron', he: 'יום הזיכרון', type: 'israel' },
+    { month: 'Iyyar', day: 5, name: 'Yom HaAtzmaut', he: 'יום העצמאות', type: 'israel' },
+    { month: 'Iyyar', day: 18, name: 'Lag BaOmer', he: 'ל״ג בעומר', type: 'jewish' },
+    { month: 'Iyyar', day: 28, name: 'Yom Yerushalayim', he: 'יום ירושלים', type: 'israel' },
+    { month: 'Sivan', day: 6, name: 'Shavuot I', he: 'שבועות א׳', type: 'jewish' },
+    { month: 'Sivan', day: 7, name: 'Shavuot II', he: 'שבועות ב׳', type: 'jewish' },
+    { month: 'Tamuz', day: 17, name: 'Shiva Asar B\'Tammuz (Fast)', he: 'י״ז בתמוז', type: 'jewish' },
+    { month: 'Av', day: 9, name: 'Tisha B\'Av (Fast)', he: 'תשעה באב', type: 'jewish' },
+    { month: 'Av', day: 15, name: 'Tu B\'Av', he: 'ט״ו באב', type: 'jewish' }
+];
+
+function getUSHolidaysForYear(year) {
+    const list = [];
+    // Fixed dates
+    list.push({ monthIdx: 0, day: 1, name: 'New Year\'s Day', type: 'us' });
+    list.push({ monthIdx: 5, day: 19, name: 'Juneteenth', type: 'us' });
+    list.push({ monthIdx: 6, day: 4, name: 'Independence Day', type: 'us' });
+    list.push({ monthIdx: 10, day: 11, name: 'Veterans Day', type: 'us' });
+    list.push({ monthIdx: 11, day: 25, name: 'Christmas Day', type: 'us' });
+
+    // Floating US Holidays
+    const getNthWeekday = (mIdx, targetDayOfWeek, n) => {
+        let count = 0;
+        for (let d = 1; d <= 31; d++) {
+            const date = new Date(year, mIdx, d);
+            if (date.getMonth() !== mIdx) break;
+            if (date.getDay() === targetDayOfWeek) {
+                count++;
+                if (count === n) return d;
+            }
+        }
+        return null;
+    };
+
+    const getLastWeekday = (mIdx, targetDayOfWeek) => {
+        let lastDay = 1;
+        for (let d = 1; d <= 31; d++) {
+            const date = new Date(year, mIdx, d);
+            if (date.getMonth() !== mIdx) break;
+            if (date.getDay() === targetDayOfWeek) lastDay = d;
+        }
+        return lastDay;
+    };
+
+    // MLK Day: 3rd Monday in Jan
+    list.push({ monthIdx: 0, day: getNthWeekday(0, 1, 3), name: 'MLK Day', type: 'us' });
+    // Presidents' Day: 3rd Monday in Feb
+    list.push({ monthIdx: 1, day: getNthWeekday(1, 1, 3), name: 'Presidents\' Day', type: 'us' });
+    // Memorial Day: Last Monday in May
+    list.push({ monthIdx: 4, day: getLastWeekday(4, 1), name: 'Memorial Day', type: 'us' });
+    // Labor Day: 1st Monday in Sept
+    list.push({ monthIdx: 8, day: getNthWeekday(8, 1, 1), name: 'Labor Day', type: 'us' });
+    // Columbus / Indigenous Peoples' Day: 2nd Monday in Oct
+    list.push({ monthIdx: 9, day: getNthWeekday(9, 1, 2), name: 'Columbus Day', type: 'us' });
+    // Thanksgiving: 4th Thursday in Nov
+    list.push({ monthIdx: 10, day: getNthWeekday(10, 4, 4), name: 'Thanksgiving', type: 'us' });
+
+    return list;
+}
+
+let calendarState = {
+    year: new Date().getFullYear(),
+    monthIdx: new Date().getMonth(),
+    viewMode: 'year' // 'year' | 'month'
+};
+
+function renderCalendarEngine() {
+    const container = document.getElementById('calendar-content-area');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const targetYear = calendarState.year;
+    const usHolidays = getUSHolidaysForYear(targetYear);
+
+    const monthsToRender = calendarState.viewMode === 'year'
+        ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        : [calendarState.monthIdx];
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Shabbat'];
+
+    monthsToRender.forEach(mIdx => {
+        const monthSheet = document.createElement('div');
+        monthSheet.className = 'calendar-month-sheet';
+
+        const firstDate = new Date(targetYear, mIdx, 1);
+        const lastDate = new Date(targetYear, mIdx + 1, 0);
+        const totalDays = lastDate.getDate();
+        const startDayOfWeek = firstDate.getDay(); // 0=Sun..6=Sat
+
+        // Header for month
+        const firstHDate = getHebrewDateInfo(firstDate);
+        const lastHDate = getHebrewDateInfo(lastDate);
+        const hebrewMonthRange = firstHDate.monthHe === lastHDate.monthHe
+            ? `${firstHDate.monthHe} ${firstHDate.year}`
+            : `${firstHDate.monthHe} – ${lastHDate.monthHe} ${firstHDate.year}`;
+
+        monthSheet.innerHTML = `
+            <div class="calendar-month-header">
+                <div class="cal-month-title">${monthNames[mIdx]} ${targetYear}</div>
+                <div class="cal-hebrew-month-subtitle">${hebrewMonthRange}</div>
+            </div>
+            <table class="calendar-grid-table">
+                <thead>
+                    <tr>
+                        ${weekdayNames.map(w => `<th>${w}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody id="cal-tbody-${mIdx}"></tbody>
+            </table>
+        `;
+
+        const tbody = monthSheet.querySelector(`#cal-tbody-${mIdx}`);
+        let currentDay = 1;
+        let weekRow = document.createElement('tr');
+
+        // Leading empty cells from previous month
+        for (let i = 0; i < startDayOfWeek; i++) {
+            const prevMonthLastDay = new Date(targetYear, mIdx, 0).getDate();
+            const dayNum = prevMonthLastDay - startDayOfWeek + i + 1;
+            const td = document.createElement('td');
+            td.className = 'cal-other-month';
+            td.innerHTML = `<div class="cal-day-header"><span class="cal-secular-date">${dayNum}</span></div>`;
+            weekRow.appendChild(td);
+        }
+
+        const today = new Date();
+        const isCurrentRealMonth = today.getFullYear() === targetYear && today.getMonth() === mIdx;
+
+        while (currentDay <= totalDays) {
+            if (weekRow.children.length === 7) {
+                tbody.appendChild(weekRow);
+                weekRow = document.createElement('tr');
+            }
+
+            const thisDate = new Date(targetYear, mIdx, currentDay);
+            const hDate = getHebrewDateInfo(thisDate);
+            const td = document.createElement('td');
+
+            if (isCurrentRealMonth && today.getDate() === currentDay) {
+                td.classList.add('cal-today');
+            }
+
+            // Events on this day
+            const events = [];
+
+            // 1. Rosh Chodesh
+            if (hDate.day === 1 || hDate.day === 30) {
+                events.push({
+                    text: hDate.day === 1 ? `ר״ח ${hDate.monthHe}` : 'ר״ח',
+                    type: 'rosh-chodesh',
+                    badgeClass: 'cal-badge-rosh-chodesh'
+                });
+            }
+
+            // 2. Jewish / Israeli Holidays
+            JEWISH_HOLIDAYS_FIXED_HEBREW.forEach(jh => {
+                if (matchesHebrewDate(jh, hDate)) {
+                    events.push({
+                        text: jh.name,
+                        type: jh.type,
+                        badgeClass: jh.type === 'israel' ? 'cal-badge-israel-holiday' : 'cal-badge-jewish-holiday'
+                    });
+                }
+            });
+
+            // 3. US Federal Holidays
+            usHolidays.forEach(uh => {
+                if (uh.monthIdx === mIdx && uh.day === currentDay) {
+                    events.push({
+                        text: uh.name,
+                        type: 'us',
+                        badgeClass: 'cal-badge-us-holiday'
+                    });
+                }
+            });
+
+            // 4. Family Birthdays (Hebrew & English)
+            (parsedBirthdays || []).forEach(b => {
+                // English Birthday match
+                if (matchesEnglishDate(b.englishParsed, thisDate)) {
+                    events.push({
+                        text: `🎂 ${b.first} ${b.last}`,
+                        type: 'english-bday',
+                        badgeClass: 'cal-badge-english-bday'
+                    });
+                }
+                // Hebrew Birthday match
+                if (matchesHebrewDate(b.hebrewParsed, hDate)) {
+                    events.push({
+                        text: `📜 ${b.first} ${b.last}`,
+                        type: 'hebrew-bday',
+                        badgeClass: 'cal-badge-hebrew-bday'
+                    });
+                }
+            });
+
+            // Render Day Cell
+            const hebrewDayStr = formatHebrewDayName(hDate.day);
+            td.innerHTML = `
+                <div class="cal-day-header">
+                    <span class="cal-secular-date">${currentDay}</span>
+                    <span class="cal-hebrew-date">${hebrewDayStr}</span>
+                </div>
+                <div class="cal-events-container">
+                    ${events.map(ev => `<span class="cal-event-tag ${ev.badgeClass}" title="${escapeHtml(ev.text)}">${escapeHtml(ev.text)}</span>`).join('')}
+                </div>
+            `;
+
+            weekRow.appendChild(td);
+            currentDay++;
+        }
+
+        // Trailing empty cells for next month
+        let nextMonthDay = 1;
+        while (weekRow.children.length < 7 && weekRow.children.length > 0) {
+            const td = document.createElement('td');
+            td.className = 'cal-other-month';
+            td.innerHTML = `<div class="cal-day-header"><span class="cal-secular-date">${nextMonthDay++}</span></div>`;
+            weekRow.appendChild(td);
+        }
+        if (weekRow.children.length > 0) {
+            tbody.appendChild(weekRow);
+        }
+
+        container.appendChild(monthSheet);
+    });
+}
+
+function setupCalendarModal() {
+    const btn = document.getElementById('calendar-btn');
+    const modal = document.getElementById('calendar-modal');
+    const overlay = document.getElementById('calendar-modal-overlay');
+    const closeBtn = document.getElementById('calendar-modal-close');
+    const dismissBtn = document.getElementById('calendar-modal-dismiss');
+    const yearSelect = document.getElementById('cal-year-select');
+    const viewSelect = document.getElementById('cal-view-select');
+    const monthSelect = document.getElementById('cal-month-select');
+    const monthContainer = document.getElementById('cal-month-select-container');
+    const prevMonthBtn = document.getElementById('cal-prev-month');
+    const nextMonthBtn = document.getElementById('cal-next-month');
+    const printBtn = document.getElementById('cal-print-btn');
+
+    if (!btn || !modal) return;
+
+    // Populate Year Select Options: [Current - 1, Current, Current + 1, Current + 2]
+    const curYear = new Date().getFullYear();
+    yearSelect.innerHTML = `
+        <option value="${curYear - 1}">${curYear - 1}</option>
+        <option value="${curYear}" selected>${curYear}</option>
+        <option value="${curYear + 1}">${curYear + 1}</option>
+        <option value="${curYear + 2}">${curYear + 2}</option>
+    `;
+    monthSelect.value = new Date().getMonth();
+
+    const openCalendar = () => {
+        calendarState.year = parseInt(yearSelect.value, 10) || curYear;
+        calendarState.monthIdx = parseInt(monthSelect.value, 10) || 0;
+        calendarState.viewMode = viewSelect.value || 'year';
+        renderCalendarEngine();
+        modal.style.display = 'flex';
+    };
+
+    const hideCalendar = () => {
+        modal.style.display = 'none';
+    };
+
+    btn.addEventListener('click', openCalendar);
+    if (overlay) overlay.addEventListener('click', hideCalendar);
+    if (closeBtn) closeBtn.addEventListener('click', hideCalendar);
+    if (dismissBtn) dismissBtn.addEventListener('click', hideCalendar);
+
+    yearSelect.addEventListener('change', () => {
+        calendarState.year = parseInt(yearSelect.value, 10);
+        renderCalendarEngine();
+    });
+
+    viewSelect.addEventListener('change', () => {
+        calendarState.viewMode = viewSelect.value;
+        if (monthContainer) {
+            monthContainer.style.display = calendarState.viewMode === 'month' ? 'flex' : 'none';
+        }
+        renderCalendarEngine();
+    });
+
+    monthSelect.addEventListener('change', () => {
+        calendarState.monthIdx = parseInt(monthSelect.value, 10);
+        renderCalendarEngine();
+    });
+
+    if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            if (calendarState.monthIdx > 0) {
+                calendarState.monthIdx--;
+            } else {
+                calendarState.monthIdx = 11;
+                calendarState.year--;
+                yearSelect.value = calendarState.year;
+            }
+            monthSelect.value = calendarState.monthIdx;
+            renderCalendarEngine();
+        });
+    }
+
+    if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+            if (calendarState.monthIdx < 11) {
+                calendarState.monthIdx++;
+            } else {
+                calendarState.monthIdx = 0;
+                calendarState.year++;
+                yearSelect.value = calendarState.year;
+            }
+            monthSelect.value = calendarState.monthIdx;
+            renderCalendarEngine();
+        });
+    }
+
+    // Print / Landscape PDF Action
+    if (printBtn) {
+        printBtn.addEventListener('click', () => {
+            window.print();
+        });
+    }
+}
+
 function getBirthdaysForNode(node) {
     if (!node) return [];
     const results = [];
@@ -2664,6 +3037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPersonBirthdayModal();
     setupBHPrompt();
     setupBirthdayPopup();
+    setupCalendarModal();
     setupAddMemberModal();
     loadFamilyTree();
 });

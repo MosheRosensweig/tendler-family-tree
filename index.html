@@ -53,6 +53,9 @@
             <span class="search-results" id="search-results"></span>
         </div>
         <div class="button-group">
+            <button class="btn btn-gold" id="calendar-btn" title="View Full Year & Monthly Printable Calendar">
+                📅 Calendar
+            </button>
             <button class="btn btn-gold" id="birthdays-btn" title="View Upcoming & Recent Birthdays">
                 🎂 Birthdays
             </button>
@@ -208,6 +211,106 @@
             </div>
             <div class="contact-modal-footer">
                 <button class="btn btn-accent" id="bday-popup-dismiss">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Year & Monthly Printable Calendar Modal -->
+    <div id="calendar-modal" class="contact-modal calendar-modal" style="display:none;" role="dialog" aria-labelledby="calendar-modal-title">
+        <div class="contact-modal-overlay" id="calendar-modal-overlay"></div>
+        <div class="contact-modal-card calendar-modal-card">
+            <button class="contact-modal-close" id="calendar-modal-close" title="Dismiss">✕</button>
+            
+            <div class="calendar-modal-header">
+                <div class="calendar-header-left">
+                    <div class="contact-avatar">📅</div>
+                    <div>
+                        <h3 id="calendar-modal-title">Tendler Family Calendar</h3>
+                        <p class="contact-subtitle" id="calendar-modal-subtitle">Hebrew &amp; English Dates • Birthdays • Jewish &amp; National Holidays</p>
+                    </div>
+                </div>
+
+                <div class="calendar-header-controls">
+                    <!-- Year selector -->
+                    <div class="cal-control-item">
+                        <label for="cal-year-select">Year:</label>
+                        <select id="cal-year-select" class="form-control cal-select">
+                            <!-- Populated dynamically: Current year - 1, Current, Current + 1 -->
+                        </select>
+                    </div>
+
+                    <!-- View mode selector: 1 Month vs Full 12 Months -->
+                    <div class="cal-control-item">
+                        <label for="cal-view-select">View:</label>
+                        <select id="cal-view-select" class="form-control cal-select">
+                            <option value="month">Single Month</option>
+                            <option value="year" selected>Full Year (12 Months)</option>
+                        </select>
+                    </div>
+
+                    <!-- Single Month Selector (visible when view=month) -->
+                    <div class="cal-control-item" id="cal-month-select-container" style="display:none;">
+                        <button class="btn btn-sm cal-nav-btn" id="cal-prev-month" title="Previous Month">◀</button>
+                        <select id="cal-month-select" class="form-control cal-select">
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                        <button class="btn btn-sm cal-nav-btn" id="cal-next-month" title="Next Month">▶</button>
+                    </div>
+
+                    <!-- Print / PDF Button -->
+                    <button class="btn btn-gold cal-print-btn" id="cal-print-btn" title="Print or Save as Landscape PDF">
+                        🖨️ Print / Save PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Key / Legend -->
+            <div class="calendar-legend-bar">
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-hebrew-bday"></span>
+                    <span>Hebrew Birthday</span>
+                </div>
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-english-bday"></span>
+                    <span>English Birthday</span>
+                </div>
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-jewish-holiday"></span>
+                    <span>Jewish Holiday / Fast</span>
+                </div>
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-us-holiday"></span>
+                    <span>US Holiday</span>
+                </div>
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-israel-holiday"></span>
+                    <span>Israel Holiday</span>
+                </div>
+                <div class="cal-legend-item">
+                    <span class="cal-legend-swatch cal-badge-rosh-chodesh"></span>
+                    <span>Rosh Chodesh</span>
+                </div>
+            </div>
+
+            <!-- Scrollable Calendar Content Area -->
+            <div class="calendar-modal-body" id="calendar-content-area">
+                <!-- Dynamically rendered monthly sheets -->
+            </div>
+
+            <div class="contact-modal-footer calendar-modal-footer">
+                <span class="cal-footer-note">💡 Tip: Use your browser's print dialog to save as a landscape PDF or print on standard Letter/A4 paper.</span>
+                <button class="btn btn-accent" id="calendar-modal-dismiss">Close</button>
             </div>
         </div>
     </div>
