@@ -93,6 +93,20 @@ The next phase expands the platform beyond an interactive tree into an **automat
 
 ---
 
+### Task 5: Annual Automated Theme Rotation Engine (Pre-Approved Aesthetic Presets)
+> **Goal**: Keep the website and dynamic calendars visually fresh by automatically transitioning to a new pre-approved theme every year (e.g. at Rosh Hashana / Jewish New Year).
+
+- [ ] **Curated Theme Presets (10 Designer Themes)**:
+  - Create ~10 fully designed, pre-approved CSS color palettes and typography pairings (e.g. *Jerusalem Stone & Gold*, *Royal Sapphire & Silver*, *Emerald Grove*, *Terracotta & Parchment*, *Modern Minimalist Slate*, *Classic Navy & Bronze*, etc.).
+  - Ensure every theme passes strict contrast/accessibility standards and maintains full legibility for Hebrew glyphs.
+- [ ] **Synchronized Web & Printable PDF Theme Inheritance**:
+  - The calendar generation engine will inherit color tokens, fonts, and accents directly from the active annual theme so the website and printable calendars always match.
+- [ ] **Automated Annual Scheduler & Rotation State**:
+  - Automatically transitions to the next scheduled theme on the rotation list once per year (tied to Rosh Hashana / Sept 1st).
+  - Admin override toggle in the UI or configuration to preview/switch themes on demand.
+
+---
+
 ## 🚀 Implementation Phasing
 
 | Phase | Milestone | Deliverable | Status |
@@ -102,3 +116,5 @@ The next phase expands the platform beyond an interactive tree into an **automat
 | **Phase 3** | **Calendar Generation Engine** | Printable single-month & 12-month PDF engine with Hebrew/Secular/Holiday data | 🟡 **Next Up** |
 | **Phase 4** | **Automated Email Pipeline** | Weekly birthday digest, monthly previews, 1-click unsubscribe endpoint | ⏳ Scheduled |
 | **Phase 5** | **Annual Distribution & Cache** | Google Drive caching, auto-invalidation, master annual distribution blast | ⏳ Scheduled |
+| **Phase 6** | **Annual Theme Rotation Engine** | ~10 pre-approved theme presets, scheduled annual auto-switch for site & calendar | ⏳ Final Milestone |
+
