@@ -1187,6 +1187,19 @@ function getHebrewDateInfo(date) {
     };
 }
 
+function matchesHebrewHoliday(holidayHDate, targetHDate) {
+    if (!holidayHDate || !holidayHDate.month || !holidayHDate.day) return false;
+    if (holidayHDate.day !== targetHDate.day) return false;
+
+    const hMonth = holidayHDate.month;
+    const tMonth = targetHDate.month;
+
+    // Direct match
+    if (hMonth === tMonth) return true;
+
+    return false;
+}
+
 function matchesHebrewDate(personHDate, targetHDate) {
     if (!personHDate || !personHDate.month || !personHDate.day) return false;
     if (personHDate.day !== targetHDate.day) return false;
@@ -1194,7 +1207,7 @@ function matchesHebrewDate(personHDate, targetHDate) {
     let pMonth = personHDate.month;
     let tMonth = targetHDate.month;
 
-    // Treat Adar I as Adar during regular (non-leap) years
+    // Birthday rule: Treat Adar I and Adar II as Adar during regular (non-leap) years
     if (tMonth === 'Adar') {
         if (pMonth === 'Adar I' || pMonth === 'Adar II') {
             pMonth = 'Adar';
@@ -1525,9 +1538,14 @@ const JEWISH_HOLIDAYS_FIXED_HEBREW = [
     { month: 'Tevet', day: 2, name: 'Chanukah VIII', he: 'חנוכה ח׳', type: 'jewish' },
     { month: 'Tevet', day: 10, name: 'Asara B\'Tevet (Fast)', he: 'עשרה בטבת', type: 'jewish' },
     { month: 'Shevat', day: 15, name: 'Tu BiShvat', he: 'ט״ו בשבט', type: 'jewish' },
+    // Non-leap year Purim (Adar)
     { month: 'Adar', day: 13, name: 'Ta\'anit Esther', he: 'תענית אסתר', type: 'jewish' },
     { month: 'Adar', day: 14, name: 'Purim', he: 'פורים', type: 'jewish' },
     { month: 'Adar', day: 15, name: 'Shushan Purim', he: 'שושן פורים', type: 'jewish' },
+    // Leap year Purim Katan (Adar I)
+    { month: 'Adar I', day: 14, name: 'Purim Katan', he: 'פורים קטן', type: 'jewish' },
+    { month: 'Adar I', day: 15, name: 'Shushan Purim Katan', he: 'שושן פורים קטן', type: 'jewish' },
+    // Leap year Main Purim (Adar II)
     { month: 'Adar II', day: 13, name: 'Ta\'anit Esther', he: 'תענית אסתר', type: 'jewish' },
     { month: 'Adar II', day: 14, name: 'Purim', he: 'פורים', type: 'jewish' },
     { month: 'Adar II', day: 15, name: 'Shushan Purim', he: 'שושן פורים', type: 'jewish' },
@@ -1708,7 +1726,7 @@ function renderCalendarEngine() {
 
             // 2. Jewish / Israeli Holidays
             JEWISH_HOLIDAYS_FIXED_HEBREW.forEach(jh => {
-                if (matchesHebrewDate(jh, hDate)) {
+                if (matchesHebrewHoliday(jh, hDate)) {
                     events.push({
                         text: jh.name,
                         type: jh.type,
