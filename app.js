@@ -2005,10 +2005,26 @@ function setupCalendarModal() {
         });
     }
 
-    // Print / Landscape PDF Action
+    // Print / Landscape PDF Action with selectable print themes
+    const printThemeSelect = document.getElementById('cal-print-theme-select');
     if (printBtn) {
         printBtn.addEventListener('click', () => {
+            const selectedTheme = printThemeSelect ? printThemeSelect.value : 'light';
+            
+            // Clean up any existing print theme classes
+            document.body.classList.remove('print-theme-bw', 'print-theme-dark');
+            if (selectedTheme === 'bw') {
+                document.body.classList.add('print-theme-bw');
+            } else if (selectedTheme === 'dark') {
+                document.body.classList.add('print-theme-dark');
+            }
+
             window.print();
+
+            // Clean up after print dialog closes
+            setTimeout(() => {
+                document.body.classList.remove('print-theme-bw', 'print-theme-dark');
+            }, 1000);
         });
     }
 }

@@ -2194,6 +2194,111 @@ main#tree-container {
         color: #ffffff !important;
     }
 
+    /* ============================================
+       PRINT THEME: BLACK & WHITE (MONOCHROME)
+       ============================================ */
+    body.print-theme-bw {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    body.print-theme-bw .calendar-month-sheet {
+        background: #ffffff !important;
+        border: 2px solid #000000 !important;
+    }
+
+    body.print-theme-bw .calendar-month-header {
+        border-bottom: 2px solid #000000 !important;
+    }
+
+    body.print-theme-bw .cal-month-title,
+    body.print-theme-bw .cal-hebrew-month-subtitle {
+        color: #000000 !important;
+    }
+
+    body.print-theme-bw .calendar-grid-table th {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #000000 !important;
+    }
+
+    body.print-theme-bw .calendar-grid-table td {
+        background: #ffffff !important;
+        border: 1px solid #666666 !important;
+    }
+
+    body.print-theme-bw .cal-secular-date,
+    body.print-theme-bw .cal-hebrew-date {
+        color: #000000 !important;
+    }
+
+    body.print-theme-bw .cal-event-tag {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    body.print-theme-bw .cal-badge-hebrew-bday,
+    body.print-theme-bw .cal-badge-english-bday,
+    body.print-theme-bw .cal-badge-jewish-holiday,
+    body.print-theme-bw .cal-badge-us-holiday,
+    body.print-theme-bw .cal-badge-israel-holiday,
+    body.print-theme-bw .cal-badge-rosh-chodesh {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+    }
+
+    /* ============================================
+       PRINT THEME: DARK / FULL COLOR WEB THEME
+       ============================================ */
+    body.print-theme-dark {
+        background: #090d16 !important;
+        color: #e2e8f0 !important;
+    }
+
+    body.print-theme-dark .calendar-month-sheet {
+        background: #0f172a !important;
+        border: 1.5px solid #bf9b30 !important;
+    }
+
+    body.print-theme-dark .calendar-month-header {
+        border-bottom: 2px solid #bf9b30 !important;
+    }
+
+    body.print-theme-dark .cal-month-title {
+        color: #fef08a !important;
+    }
+
+    body.print-theme-dark .cal-hebrew-month-subtitle {
+        color: #fef08a !important;
+    }
+
+    body.print-theme-dark .calendar-grid-table th {
+        background: #090d16 !important;
+        color: #fef08a !important;
+        border: 1px solid #1e293b !important;
+    }
+
+    body.print-theme-dark .calendar-grid-table td {
+        background: #0d1527 !important;
+        border: 1px solid #1e293b !important;
+    }
+
+    body.print-theme-dark .calendar-grid-table td.cal-other-month {
+        background: #060911 !important;
+        opacity: 0.3 !important;
+    }
+
+    body.print-theme-dark .cal-secular-date {
+        color: #f8fafc !important;
+    }
+
+    body.print-theme-dark .cal-hebrew-date {
+        color: #cbd5e1 !important;
+    }
+
     @page {
         size: landscape;
         margin: 0.3in;
